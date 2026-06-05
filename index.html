@@ -2,500 +2,575 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>山陽四國自駕絕景與購物之旅</title>
-    <!-- Tailwind CSS & FontAwesome -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌊 山陽四國．手帳風情侶自駕遊</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+TC:wght@400;500;700&display=swap">
+    
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
+
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@300;400;500;700&display=swap');
-        body { font-family: 'Noto Sans TC', sans-serif; background-color: #f3f4f6; }
-        .tab-active { background-color: #3b82f6; color: white; transform: translateY(-2px); }
+        body {
+            font-family: 'Kosugi Maru', 'Noto Sans TC', sans-serif;
+            background-color: #F7F4EB;
+            /* 日系手帳點狀減壓背景 */
+            background-image: radial-gradient(#E5DFD3 1.5px, transparent 1.5px);
+            background-size: 20px 20px;
+        }
+        /* 手帳感經典圓角與手帳專屬軟網格陰影 */
+        .diary-card {
+            background: #FFFFFF;
+            border: 2px solid #E6DFD1;
+            border-radius: 24px;
+            box-shadow: 5px 5px 0px #E2DCD0;
+        }
+        .diary-btn-blue {
+            background-color: #4A7C59;
+            color: white;
+            border-radius: 16px;
+            box-shadow: 3px 3px 0px #2A4D34;
+        }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+        .timeline-line::before {
+            content: '';
+            position: absolute;
+            top: 0; bottom: 0; left: 19px;
+            width: 3px;
+            background: repeating-linear-gradient(to bottom, #C8D6AF, #C8D6AF 4px, transparent 4px, transparent 8px);
+        }
     </style>
 </head>
-<body class="max-w-md mx-auto bg-gray-50 min-h-screen shadow-xl flex flex-col justify-between pb-24">
+<body class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-28 text-gray-800">
 
-    <!-- Top Header -->
-    <header class="bg-gradient-to-r #3b82f6 from-blue-600 to-indigo-700 text-white px-4 pt-6 pb-4 rounded-b-3xl shadow-lg sticky top-0 z-50">
-        <div class="flex justify-between items-center mb-3">
+    <header class="bg-[#688B9A] text-white px-5 pt-6 pb-5 rounded-b-[32px] shadow-md border-b-4 border-[#4E6E7B] sticky top-0 z-40">
+        <div class="flex justify-between items-center mb-4">
             <div>
-                <h1 class="text-xl font-bold tracking-wide">山陽四國自駕絕景與購物</h1>
-                <p class="text-xs text-blue-100 mt-0.5">📅 2026/06/13 ~ 06/21 (9天8夜)</p>
+                <h1 class="text-xl font-bold tracking-wider flex items-center gap-1">
+                    <span>🗺️</span> 山陽四國手帳日記
+                </h1>
+                <p class="text-xs text-blue-100 mt-1 font-mono">2026.06.13 - 06.21 🌴 9Days</p>
             </div>
-            <span class="bg-white/20 text-white text-xs px-2.5 py-1 rounded-full font-medium border border-white/20">🚗 Nissan March</span>
+            <div class="bg-[#EBF3F5] text-[#335C67] text-[11px] px-3 py-1 rounded-full font-bold border border-[#B2CCD4]">
+                🚗 Nissan March
+            </div>
         </div>
         
-        <!-- Date Switcher Capsule -->
-        <div class="flex gap-2 overflow-x-auto hide-scrollbar py-1" id="dateTabs">
-            <!-- Tabs injected by JS -->
-        </div>
+        <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector">
+            </div>
     </header>
 
-    <!-- Main Content Area -->
-    <main class="px-4 py-4 flex-grow" id="mainContent">
-        <!-- Dynamic Day Content Injected Here -->
-    </main>
+    <main class="px-4 py-4 flex-grow" id="appBody">
+        </main>
 
-    <!-- Fixed Bottom Navigation (Includes Budget & Booking Quick Access) -->
-    <nav class="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white/95 backdrop-blur-md border-t border-gray-100 shadow-2xl z-50 rounded-t-2xl px-6 py-2 flex justify-around items-center text-center">
-        <button onclick="switchView('itinerary')" id="nav-itinerary" class="flex flex-col items-center text-blue-600 transition-all">
-            <i class="fa-solid fa-map-location-dot text-xl mb-0.5"></i>
-            <span class="text-[11px] font-medium">詳細行程</span>
+    <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-50 rounded-2xl p-2 flex justify-around items-center">
+        <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#688B9A] active:scale-95 transition-all">
+            <i class="fa-solid fa-compass text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold">行程</span>
         </button>
-        <button onclick="openBookingModal()" class="flex flex-col items-center text-gray-400 hover:text-indigo-600 transition-all">
-            <i class="fa-solid fa-key text-xl mb-0.5"></i>
-            <span class="text-[11px] font-medium">隱私預訂</span>
+        <button onclick="changeTab('bookings')" id="nav-bookings" class="flex flex-col items-center text-gray-400 active:scale-95 transition-all">
+            <i class="fa-solid fa-ticket text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold">預訂</span>
         </button>
-        <button onclick="switchView('budget')" id="nav-budget" class="flex flex-col items-center text-gray-400 transition-all">
-            <i class="fa-solid fa-wallet text-xl mb-0.5"></i>
-            <span class="text-[11px] font-medium">旅行記帳</span>
+        <button onclick="changeTab('expense')" id="nav-expense" class="flex flex-col items-center text-gray-400 active:scale-95 transition-all">
+            <i class="fa-solid fa-calculator text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold">記帳</span>
+        </button>
+        <button onclick="changeTab('planning')" id="nav-planning" class="flex flex-col items-center text-gray-400 active:scale-95 transition-all">
+            <i class="fa-solid fa-heart-circle-check text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold">準備</span>
+        </button>
+        <button onclick="changeTab('members')" id="nav-members" class="flex flex-col items-center text-gray-400 active:scale-95 transition-all">
+            <i class="fa-solid fa-user-group text-lg mb-0.5"></i>
+            <span class="text-[10px] font-bold">成員</span>
         </button>
     </nav>
 
-    <!-- Booking Modal (Requires PIN 007) -->
-    <div id="bookingModal" class="fixed inset-0 bg-black/60 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm">
-        <div class="bg-white rounded-3xl w-full max-w-sm p-6 shadow-2xl transform transition-all scale-95 opacity-0" id="bookingBox">
-            <div id="pinArea">
-                <h3 class="text-lg font-bold text-gray-800 mb-2"><i class="fa-solid fa-lock text-indigo-500 mr-2"></i>解鎖隱私預訂清單</h3>
-                <p class="text-xs text-gray-500 mb-4">請輸入密碼解鎖機票與住宿詳細確認號碼</p>
-                <input type="password" id="pinInput" placeholder="請輸入 3 位數密碼" class="w-full border border-gray-200 rounded-xl px-4 py-3 text-center text-lg tracking-widest font-bold focus:outline-none focus:ring-2 focus:ring-indigo-500 mb-4">
-                <div class="flex gap-2">
-                    <button onclick="closeBookingModal()" class="flex-1 bg-gray-100 hover:bg-gray-200 text-gray-700 py-2.5 rounded-xl text-sm font-medium">取消</button>
-                    <button onclick="verifyPin()" class="flex-1 bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-xl text-sm font-medium">確認解鎖</button>
-                </div>
-            </div>
-            <div id="bookingContent" class="hidden max-h-[70vh] overflow-y-auto hide-scrollbar">
-                <div class="flex justify-between items-center border-b border-gray-100 pb-3 mb-4">
-                    <h3 class="text-lg font-bold text-gray-900"><i class="fa-solid fa-hotel text-blue-500 mr-2"></i>機票與酒店預訂總覽</h3>
-                    <button onclick="closeBookingModal()" class="text-gray-400 hover:text-gray-600"><i class="fa-solid fa-xmark text-lg"></i></button>
-                </div>
-                <div class="space-y-4 text-xs">
-                    <div class="p-3 bg-blue-50 rounded-xl border border-blue-100">
-                        <p class="font-bold text-blue-800 text-sm">✈️ 中華航空 CI179 (回程)</p>
-                        <p class="text-gray-600 mt-1">日期：6/21 (日) 19:05 高松起飛 ➔ 台北</p>
-                        <p class="text-gray-500">預訂代號：<span class="font-mono font-bold text-gray-800">CI-TAK88921</span></p>
-                    </div>
-                    <div class="p-3 bg-gray-50 rounded-xl border border-gray-100 space-y-3">
-                        <div>
-                            <p class="font-bold text-gray-800">🏨 D1: Hostel JAQ takamatsu</p>
-                            <p class="text-gray-500">確認號：#JAQ-99210</p>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800">🏨 D2-D3: 松山全日空皇冠假日飯店</p>
-                            <p class="text-gray-500">確認號：#IHG-ANA-772183</p>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800">🏨 D4-D5: 廣島全日空皇冠假日飯店</p>
-                            <p class="text-gray-500">確認號：#IHG-ANA-110293</p>
-                        </div>
-                        <div>
-                            <p class="font-bold text-gray-800">🏨 D6: 鞆の浦 Airbnb 包棟老屋</p>
-                            <p class="text-gray-500">確認號：#HM-AIRBNB-88301</p>
-                        </div>
-                        <div class="p-2.5 bg-amber-50 border border-amber-200 rounded-lg">
-                            <p class="font-bold text-amber-900">🏨 D7: APA飯店 岡山站前 (更新)</p>
-                            <p class="text-amber-800">確認號：#APA-OKAYAMA-66502</p>
-                        </div>
-                        <div class="p-2.5 bg-purple-50 border border-purple-200 rounded-lg">
-                            <p class="font-bold text-purple-900">🏨 D8: 高松織女星飯店 Hotel Vega (全新)</p>
-                            <p class="text-purple-800">確認號：#VEGA-TAK-33921 (汽旅型態友善吸菸)</p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Core Logic JavaScript -->
     <script>
-        let currentDay = 1;
-        let currentView = 'itinerary'; // itinerary or budget
-
-        // Refactored 9-Day Dataset based on your specific requests
-        const itineraryData = {
-            1: {
-                date: "6/13 (六)",
-                title: "台北 ➔ 高松機場 ➔ 高松市區",
-                focus: "抵達、機場取車、高松商店街晚餐與初試身手。",
-                timeline: [
-                    { time: "18:05", desc: "班機降落高松機場，辦理入境。" },
-                    { time: "19:00 - 19:30", desc: "【租車取車】至 NISSAN 租車櫃台辦理手續，購買 9 日 SEP，檢查 March 車況。(機場門外設有指定喫煙所，取車前可先補一根)" },
-                    { time: "19:30 - 20:10", desc: "開車前往高松市區（車程約 40 分鐘）。" },
-                    { time: "20:10 - 20:30", desc: "辦理入住 Hostel JAQ takamatsu。" },
-                    { time: "20:30~", desc: "步行至高松最長的【兵庫町/片原町商店街】吃宵夜（推薦烏龍麵名店或骨付鳥）。" }
-                ],
-                maps: [
-                    { name: "Hostel JAQ takamatsu (香川県高松市片原町1-1)", url: "https://maps.google.com/?q=Hostel+JAQ+takamatsu" },
-                    { name: "高松中央商店街", url: "https://maps.google.com/?q=高松中央商店街" }
-                ],
-                transport: "機場到市區油資與部分未含在 SEP 的路段約需 300 日圓（~台幣 60 元）。",
-                estExpense: "晚餐與宵夜點心 4,000 日圓（~台幣 788 元）。",
-                smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。"
-            },
-            2: {
-                date: "6/14 (日)",
-                title: "高松城 ➔ 秘境大步危峽 ➔ 松山夕陽",
-                focus: "四國三大水城之一、德島秘境遊船、傍晚拉車至愛媛。",
-                timeline: [
-                    { time: "08:30 - 10:00", desc: "散步前往【高松城（玉藻公園）】。" },
-                    { time: "10:00 - 11:30", desc: "退房，開車南下前往德島【大步危峽】（車程約 1 小時 20 分）。" },
-                    { time: "11:30 - 13:30", desc: "享用當地祖谷蕎麥麵，搭乘【大步危峽谷觀光遊覽船】（航程 30 分鐘），沿途欣賞急流與壯麗奇岩，順路開車經【小步危】拍照。" },
-                    { time: "13:30 - 16:30", desc: "開車橫跨四國前往愛媛松山市（車程約 2.5 小時，走高速公路，SEP 全配免過路費）。" },
-                    { time: "16:30 - 17:00", desc: "入住 松山全日空皇冠假日飯店。" },
-                    { time: "17:30~", desc: "晚餐至松山大街道商店街享用愛媛鯛魚飯（鯛めし），晚上至【道後溫泉周邊】散步看少爺機關鐘，泡個足湯。" }
-                ],
-                maps: [
-                    { name: "高松城 (玉藻公園)", url: "https://maps.google.com/?q=高松城+玉藻公園" },
-                    { name: "大步危峽觀光船乘船處", url: "https://maps.google.com/?q=大步危峽觀光船乘船處" },
-                    { name: "松山全日空皇冠假日飯店 (愛媛県松山市一番町3丁目2-1)", url: "https://maps.google.com/?q=松山全日空皇冠假日飯店" },
-                    { name: "道後溫泉本館", url: "https://maps.google.com/?q=道後溫泉本館" }
-                ],
-                transport: "觀光船門票雙人 3,000 日圓（~台幣 590 元）。",
-                estExpense: "門票 + 午晚餐與點心共 11,000 日圓（~台幣 2,165 元）。",
-                smoking: "大步危觀光船售票處旁有極大的戶外吸菸區。松山全日空飯店館內設有舒適的密閉吸菸室。"
-            },
-            3: {
-                date: "6/15 (一)",
-                title: "松山城 ➔ 萬翠莊 ➔ 大街道全面購物日",
-                focus: "體驗松山城單人空中吊椅、大街道與銀天街強大購物行程。",
-                timeline: [
-                    { time: "09:00 - 11:30", desc: "從飯店散步至纜車站，搭乘超酷的「單人無安全帶吊椅」登上【松山城】，俯瞰松山市景與瀨戶內海。" },
-                    { time: "11:30 - 12:30", desc: "山腳下參觀法式洋樓【萬翠莊】。" },
-                    { time: "12:30 - 14:00", desc: "午餐在大街道享用名物「鍋燒烏龍麵」。" },
-                    { time: "14:00 - 20:00", desc: "【大街道與銀天街商店街】瘋狂購物、尋找【扭蛋之森（ガチャの森）】大扭特扭。" },
-                    { time: "20:00~", desc: "晚餐品嚐愛媛當地的瀨戶內海海鮮居酒屋。" }
-                ],
-                maps: [
-                    { name: "松山城纜車站", url: "https://maps.google.com/?q=松山城纜車站" },
-                    { name: "萬翠莊", url: "https://maps.google.com/?q=萬翠莊" },
-                    { name: "松山大街道商店街", url: "https://maps.google.com/?q=松山大街道商店街" }
-                ],
-                transport: "松山城纜車+天守閣套票雙人 2,080 日圓（~台幣 410 元）。市區步行不需油資。",
-                estExpense: "門票 + 購物外日常餐飲共 9,000 日圓（~台幣 1,770 元）。",
-                smoking: "松山城山頂廣場指定位置設有吸菸區；大街道商店街內部分柏青哥店或指定居酒屋有吸菸室。"
-            },
-            4: {
-                date: "6/16 (二)",
-                title: "島波海道跳島自駕 ➔ 龜老山展望台 ➔ 廣島",
-                focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。",
-                timeline: [
-                    { time: "08:30 - 09:30", desc: "退房出發，開車北上至今治市，準備進入【島波海道】。" },
-                    { time: "09:30 - 11:00", desc: "首站前往大島【龜老山展望公園】，這座由隈研吾設計的觀景台能 360 度俯瞰來島海峽大橋。" },
-                    { time: "11:00 - 13:30", desc: "沿著島波海道一路跳島開車（伯方島、大三島、生口島），中午在島上吃檸檬拉麵或海鮮丼。" },
-                    { time: "13:30 - 15:30", desc: "下島波海道後，經由尾道走山陽自動車道直奔廣島市區（車程約 1.5 小時）。" },
-                    { time: "15:30 - 16:30", desc: "入住 廣島全日空皇冠假日飯店。" },
-                    { time: "16:30~", desc: "傍晚至廣島最熱鬧的【本通商店街】與新開幕的【Minamoa廣島】逛街，朝聖【AKOMEYA TOKYO】。" }
-                ],
-                maps: [
-                    { name: "龜老山展望公園", url: "https://maps.google.com/?q=龜老山展望公園" },
-                    { name: "廣島全日空皇冠假日飯店 (廣島県廣島市中区中町7-20)", url: "https://maps.google.com/?q=廣島全日空皇冠假日飯店" },
-                    { name: "AKOMEYA TOKYO Minamoa廣島", url: "https://maps.google.com/?q=AKOMEYA+TOKYO+Minamoa廣島" }
-                ],
-                transport: "島波海道跨海橋樑費（SEP 已包）。今日車程長，中途加油約 2,000 日圓（~台幣 394 元）。",
-                estExpense: "油資 + 豐盛晚餐與逛街小吃共 11,500 日圓（~台幣 2,264 元）。",
-                smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」（如多多羅島波公園）都有非常明顯且舒適的戶外喫煙所。"
-            },
-            5: {
-                date: "6/17 (三)",
-                title: "廣島城 ➔ 原爆圓頂 ➔ 宮島嚴島神社",
-                focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。",
-                timeline: [
-                    { time: "09:00 - 11:00", desc: "步行或開車前往【廣島城】與【原子彈爆炸圓頂屋（平和紀念公園）】。" },
-                    { time: "11:00 - 12:00", desc: "開車前往宮島口（車程約 40 分鐘），將March停在宮島口收費停車場。" },
-                    { time: "12:15 - 12:30", desc: "搭乘 JR 西日本宮島渡輪前往宮島。" },
-                    { time: "12:30 - 17:30", desc: "宮島大探險！先在表參道商店街吃烤牡蠣、紅葉饅頭。隨後前往【嚴島神社】，完美目睹大鳥居矗立在海水中的神聖畫面。" },
-                    { time: "17:30 - 18:30", desc: "搭船返回宮島口，開車回廣島市區。" },
-                    { time: "19:00~", desc: "晚餐安排去廣島燒名店【鐵太】或【電光石火】。" }
-                ],
-                maps: [
-                    { name: "原子彈爆炸圓頂屋", url: "https://maps.google.com/?q=原子彈爆炸圓頂屋" },
-                    { name: "宮島口渡輪乘船處", url: "https://maps.google.com/?q=宮島口渡輪乘船處" },
-                    { name: "嚴島神社", url: "https://maps.google.com/?q=嚴島神社" },
-                    { name: "廣島燒 鐵太 (或市區名店)", url: "https://maps.google.com/?q=廣島燒+鐵太" }
-                ],
-                transport: "宮島口停車費約 1,000 日圓、渡輪雙人來回與宮島訪問稅約 600 日圓。（總計~台幣 315 元）。",
-                estExpense: "門票/交通 + 豪華牡蠣大餐與廣島燒 13,000 日圓（~台幣 2,560 元）。",
-                smoking: "宮島全島嚴格禁菸，但在「宮島棧橋（渡輪站）出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。"
-            },
-            6: {
-                date: "6/18 (四)",
-                title: "尾道山城 ➔ 宿：鞆之浦海景",
-                focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型港町。",
-                timeline: [
-                    { time: "08:30 - 10:00", desc: "退房，開車前往文豪與電影之城【尾道】（車程約 1 小時 20 分）。" },
-                    { time: "10:00 - 13:00", desc: "搭乘纜車上【千光寺公園】，俯瞰尾道水道。隨後沿石階下山，漫步於【貓之細道】。午餐在山腳下享用經典的「尾道拉麵」。" },
-                    { time: "13:00 - 14:00", desc: "開車前往江戶時代港口【鞆之浦】（車程約 45 分鐘）。" },
-                    { time: "14:00 - 16:00", desc: "造訪建在斷崖絕壁上的朱紅色【阿伏兎觀音】（景色驚險絕美）。" },
-                    { time: "16:00 - 17:00", desc: "前往鞆之浦市中心，入住極具風情的 鞆の浦 Airbnb。" },
-                    { time: "17:00~", desc: "傍晚在夕陽下的港泰常夜燈散步。晚餐品嚐當地的鯛魚料理。" }
-                ],
-                maps: [
-                    { name: "千光寺山纜車", url: "https://maps.google.com/?q=千光寺山纜車" },
-                    { name: "貓之細道", url: "https://maps.google.com/?q=貓之細道" },
-                    { name: "阿伏兎観音", url: "https://maps.google.com/?q=阿伏兎観音" },
-                    { name: "鞆之浦 常夜燈", url: "https://maps.google.com/?q=鞆之浦+常夜燈" }
-                ],
-                transport: "尾道纜車雙人單程 1,000 日圓，阿伏兔觀音門票雙人 400 日圓。",
-                estExpense: "門票 + 尾道拉麵與鞆之浦晚餐共 9,500 日圓（~台幣 1,870 元）。",
-                smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，但部分的「道の駅」或海濱開闊停車場設有集菸桶。"
-            },
-            7: {
-                date: "6/19 (五)",
-                title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物【更新住宿】",
-                focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購。",
-                timeline: [
-                    { time: "09:00 - 10:30", desc: "前往【福禪寺 對潮樓】，坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。" },
-                    { time: "10:30 - 11:30", desc: "退房，開車前往倉敷（車程約 1 小時）。" },
-                    { time: "11:30 - 16:00", desc: "漫遊【倉敷美觀地區】。中午吃倉敷名物 Kappa 炸豬排。下午沿著倉敷川散步，逛充滿文具與紙膠帶的小店。" },
-                    { time: "16:00 - 16:30", desc: "開車前往岡山車站周邊（車程約 30 分鐘）。" },
-                    { time: "16:30 - 17:00", desc: "辦理入住 【APA飯店 岡山站前】 並停妥車輛。" },
-                    { time: "17:00~", desc: "晚上直接開啟瘋狂購物模式！步行前往與車站相連的【岡山車站地下街】與【AEON MALL 岡山】。晚餐可在 AEON 內享用岡山備前黑牛燒肉或千屋牛。" }
-                ],
-                maps: [
-                    { name: "福禪寺 對潮樓", url: "https://maps.google.com/?q=福禪寺+對潮樓" },
-                    { name: "倉敷美觀地區", url: "https://maps.google.com/?q=倉敷美觀地區" },
-                    { name: "APA飯店 岡山站前 (岡山県岡山市北区下石井1丁目3-12)", url: "https://maps.google.com/?q=APA飯店+岡山站前" },
-                    { name: "AEON MALL 岡山", url: "https://maps.google.com/?q=AEON+MALL+岡山" }
-                ],
-                transport: "對潮樓門票雙人 400 日圓。倉敷與岡山飯店停車費約 1,500-2,000 日圓。",
-                estExpense: "門票/停車 + 豬排午餐與高級燒肉晚餐共 15,000 日圓（~台幣 2,950 元）。",
-                smoking: "倉敷美觀地區中央公廁旁、以及大型收費停車場周邊有指定吸菸區。APA飯店內設有專用吸菸室，岡山車站西口與 AEON MALL 內亦有吸菸室。"
-            },
-            8: {
-                date: "6/20 (六)",
-                title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿：高松織女星【全新行程】",
-                focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住高松設計感精品飯店。",
-                timeline: [
-                    { time: "09:00 - 11:30", desc: "退房（行李拉上March），前往參觀黑色的【岡山城】（烏城），並過橋進入日本三大名園之一的【岡山後樂園】。" },
-                    { time: "11:30 - 12:40", desc: "午餐在岡山車站附近享用鰆魚料理或著名的「德島拉麵/岡山拉麵」。" },
-                    { time: "12:40 - 13:40", desc: "【自駕跨海】 開車南下，橫跨壯麗的【瀨戶大橋】返回四國香川縣。" },
-                    { time: "13:40 - 14:10", desc: "中途停靠【與島 PA】服務區，在海中央下車拍瀨戶大橋全景。(這裡有極棒的戶外吸菸區)" },
-                    { time: "14:30 - 16:30", desc: "抵達香川宇多津，前往網美景點【四國水族館】；若想主攻購物，可改去高松市區的【驚安殿堂 唐吉訶德】或大型 【Youme Town 高松】 大採購。" },
-                    { time: "16:30 - 17:00", desc: "前往高松郊區，辦理入住 【高松織女星飯店（Hotel Vega Takamatsu）】。" },
-                    { time: "17:30~", desc: "晚上在飯店稍作休息，開車前往高松市區或飯店周邊居酒屋，享用來香川必吃的「骨付鳥」與在地清酒，慶祝自駕旅程圓滿。" }
-                ],
-                maps: [
-                    { name: "岡山後樂園 / 岡山城", url: "https://maps.google.com/?q=岡山後樂園" },
-                    { name: "與島PA (瀨戶大橋展望台)", url: "https://maps.google.com/?q=與島PA" },
-                    { name: "四國水族館 (或 高松唐吉訶德)", url: "https://maps.google.com/?q=四國水族館" },
-                    { name: "高松織女星飯店 (香川県高松市東山崎町224-1)", url: "https://maps.google.com/?q=Hotel+Vega+Takamatsu" }
-                ],
-                transport: "後樂園共通券雙人 1,280 日圓。瀨戶大橋過路費（SEP 已含）。今日油資約 1,200 日圓。",
-                estExpense: "門票 + 購物外之午晚餐與點心共 13,000 日圓（~台幣 2,560 元）。",
-                smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店（Hotel Vega）屬於時尚精品/汽車旅館型態，普遍提供非常友善的吸菸房型，對於常常需要吸菸的男方極度舒適便利。"
-            },
-            9: {
-                date: "6/21 (日)",
-                title: "金刀比羅宮 ➔ 天空之鳥居 ➔ 還車歸國【全新優化】",
-                focus: "挑戰 785 階一生必去神宮、極致天空之鳥居、還車完美歸國。",
-                timeline: [
-                    { time: "08:30 - 09:20", desc: "從高松織女星飯店退房出發，開車前往琴平（車程大幅縮短，只需約 50 分鐘）。" },
-                    { time: "09:20 - 12:20", desc: "挑戰【金刀比羅宮】！步行登上 785 階到達本宮，參拜海上守護神。下山後在參道享用烏龍麵。" },
-                    { time: "12:20 - 13:15", desc: "開車前往觀音寺市的【高屋神社（本宮）】（車程約 45 分鐘-1小時）。" },
-                    { time: "13:15 - 14:45", desc: "朝聖【高屋神社】。從山頂的「天空之鳥居」俯瞰觀音寺市區與瀨戶內海的絕美沙灘，猶如人間仙境。" },
-                    { time: "14:45 - 15:45", desc: "開車前往高松機場（車程約 1 小時，時間非常充裕安全）。" },
-                    { time: "16:00", desc: "【還車】回到高松機場附近的 NISSAN 租車公司營業所還車，結算 SEP 完好交車。" },
-                    { time: "16:30", desc: "搭乘接駁車抵達機場櫃台，辦理華航登機手續，在機場免稅店最後補貨。" },
-                    { time: "19:05", desc: "搭乘 CI179 班機返回台北，結束完美的 9 天山陽四國絕景購物之旅！" }
-                ],
-                maps: [
-                    { name: "金刀比羅宮", url: "https://maps.google.com/?q=金刀比羅宮" },
-                    { name: "高屋神社 本宮 (天空之鳥居)", url: "https://maps.google.com/?q=高屋神社+本宮" },
-                    { name: "高松機場 NISSAN 租車", url: "https://maps.google.com/?q=高松機場+NISSAN+租車" }
-                ],
-                transport: "金刀比羅宮停車費 500 日圓。還車前加滿油資約 3,500 日圓（~台幣 690 元）。",
-                estExpense: "停車與加滿油 + 機場晚餐/點心共 10,000 日圓（~台幣 1,970 元）。",
-                smoking: "金刀比羅宮參道沿途有多間商店設有吸菸點；高松機場入關前二樓、以及出關後的免稅店旁皆設有非常乾淨的室內吸菸室。"
-            }
+        // ==========================================
+        // 1. FIREBASE CONFIGURATION & INITIALIZATION
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
         };
+        
+        // 初始化 Firebase (若未填寫則會優雅調用本地快取模擬)
+        let db;
+        let storage;
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                // 啟用本地離線持久化支援 (Offline Persistence)
+                firebase.firestore().enablePersistence().catch(err => console.log("離線模式限制:", err.code));
+                db = firebase.firestore();
+                storage = firebase.storage();
+            }
+        } catch(e) { console.log("Firebase 尚未填寫，自動切換至 LocalStorage 離線運行"); }
 
-        // Budget Ledger LocalStorage System
-        let expenses = JSON.parse(localStorage.getItem('trip_expenses')) || [
-            { id: 1, text: "D1 宵夜烏龍麵與骨付鳥", amount: 4000 },
-            { id: 2, text: "D2 大步危遊船門票雙人", amount: 3000 },
-            { id: 3, text: "D3 松山城纜車天守套票", amount: 2080 },
-            { id: 4, text: "D4 中途開車加油補給", amount: 2000 }
+        // ==========================================
+        // 2. STATE MANAGEMENT & LOCAL DATA
+        // ==========================================
+        let activeTab = 'schedule';
+        let selectedDay = 1;
+
+        // 預設成員與大頭貼
+        let membersList = JSON.parse(localStorage.getItem('m_list')) || [
+            { id: 'm1', name: '男方 (車手/吸菸)', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
+            { id: 'm2', name: '女方 (總監/購物)', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
         ];
 
-        function renderTabs() {
-            const tabsContainer = document.getElementById('dateTabs');
-            tabsContainer.innerHTML = '';
+        // 預設準備清單
+        let checklistData = JSON.parse(localStorage.getItem('c_list')) || [
+            { id: 1, type: 'todo', text: '線上申辦國際駕照與日文譯本', done: true },
+            { id: 2, type: 'baggage', text: '男方必備打火機與備用菸草', done: false },
+            { id: 3, type: 'shopping', text: '倉敷美觀限定紙膠帶與文具', done: false }
+        ];
+
+        // 預設記帳明細
+        let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [
+            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: '男方 (車手/吸菸)', split: '雙人均分' },
+            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: '女方 (總監/購物)', split: '雙人均分' },
+            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: '男方 (車手/吸菸)', split: '雙人均分' }
+        ];
+
+        // 精準 9 天手帳行程配置
+        const mainItinerary = {
+            1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
+                { time: "18:05", type: "transport", spot: "高松機場", desc: "班機降落高松機場，辦理入境手續。" },
+                { time: "19:00", type: "transport", spot: "NISSAN 租車櫃台", desc: "辦理取車，購買 9 日 SEP，檢查 March 車況。(機場門外有指定喫煙所，可先補一根)" },
+                { time: "20:10", type: "hotel", spot: "Hostel JAQ takamatsu", desc: "辦理入住。地址：香川県高松市片原町1-1" },
+                { time: "20:30", type: "food", spot: "兵庫町/片原町商店街", desc: "步行吃宵夜，強力推薦讚岐烏龍麵名店或骨付鳥。" }
+            ]},
+            2: { date: "6/14 (日)", weather: "⛅ 多雲 24°C", title: "高松城 ➔ 大步危秘境 ➔ 松山夕陽", focus: "四國三大水城之一、德島秘境遊船、傍晚拉車至愛媛。", smoking: "大步危觀光船售票處旁有極大的戶外吸菸區。松山全日空飯店館內設有舒適密閉吸菸室。", items: [
+                { time: "08:30", type: "scenic", spot: "高松城 (玉藻公園)", desc: "散步前往參觀四國三大水城之一。" },
+                { time: "11:30", type: "scenic", spot: "大步危峽觀光船", desc: "享用祖谷蕎麥麵，搭乘觀光船（航程 30 分鐘）欣賞急流壯麗奇岩。" },
+                { time: "16:30", type: "hotel", spot: "松山全日空皇冠假日飯店", desc: "辦理入住。地址：愛媛県松山市一番町3丁目2-1" },
+                { time: "17:30", type: "food", spot: "道後溫泉周邊", desc: "享用愛媛鯛魚飯，散步看少爺機關鐘，享受悠閒足湯。" }
+            ]},
+            3: { date: "6/15 (一)", weather: "🌧️ 局部雨 22°C", title: "松山城 ➔ 萬翠莊 ➔ 大街道購物日", focus: "體驗松山城單人空中吊椅、大街道與銀天街強大購物行程。", smoking: "松山城山頂廣場指定位置設有吸菸區；大街道商店街內部分柏青哥店或指定居酒屋有吸菸室。", items: [
+                { time: "09:00", type: "scenic", spot: "松山城纜車站", desc: "搭乘超酷「單人無安全帶吊椅」登上天守閣，俯瞰瀨戶內海。" },
+                { time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀極具大正浪漫風情的法式洋樓。" },
+                { time: "14:00", type: "shopping", spot: "大街道與銀天街", desc: "瘋狂購物、尋找【扭蛋之森】大扭特扭，晚餐享用瀨戶內海海鮮居酒屋。" }
+            ]},
+            4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。", smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」皆有明顯舒適的戶外喫煙所。", items: [
+                { time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "由隈研吾設計，360 度俯瞰來島海峽大橋，此生必看絕景！" },
+                { time: "11:00", type: "transport", spot: "島波海道跳島", desc: "沿途經過伯方島、大三島，中午在島上享用名產檸檬拉麵。" },
+                { time: "15:30", type: "hotel", spot: "廣島全日空皇冠假日飯店", desc: "入住休息。地址：廣島県廣島市中区中町7-20" },
+                { time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛新開幕商場，朝聖精緻日式雜貨 AKOMEYA TOKYO。" }
+            ]},
+            5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島城 ➔ 原爆圓頂 ➔ 宮島海上鳥居", focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "宮島全島嚴格禁菸，但在「宮島棧橋出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
+                { time: "09:00", type: "scenic", spot: "平和紀念公園", desc: "步行參觀原子彈爆炸圓頂屋與廣島城。" },
+                { time: "12:15", type: "transport", spot: "宮島口渡輪", desc: "搭乘 JR 西日本渡輪前往宮島，表參道享受烤牡蠣、紅葉饅頭。" },
+                { time: "15:00", type: "scenic", spot: "嚴島神社", desc: "下午適逢預估滿潮，完美目睹紅色大鳥居矗立在海中的神聖畫面。" },
+                { time: "19:00", type: "food", spot: "廣島燒名店 鐵太", desc: "回市區晚餐，觀看師傅在鐵板上層層堆疊高麗菜與炒麵的精湛手藝。" }
+            ]},
+            6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城（貓之細道）➔ 鞆之浦", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型的港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，部分開闊停車場設有集菸桶。", items: [
+                { time: "10:00", type: "scenic", spot: "千光寺公園 / 貓之細道", desc: "搭纜車俯瞰尾道水道，漫步石階下山尋找貓咪，午餐享用經典尾道拉麵。" },
+                { time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪建在斷崖絕壁上的朱紅色觀音廟，景色驚險絕美。" },
+                { time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步，享受靜謐小鎮之夜。" }
+            ]},
+            7: { date: "6/19 (五)", weather: "☀️ 晴 26°C", title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物", focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購。", smoking: "美觀地區中央公廁旁有吸菸區。APA飯店內設有專用吸菸室，岡山車站西口與 AEON MALL 內亦有吸菸室。", items: [
+                { time: "09:00", type: "scenic", spot: "福禪寺 對潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。" },
+                { time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "中午吃名物 Kappa 炸豬排。下午沿著倉敷川散步，逛紙膠帶雜貨小店。" },
+                { time: "16:30", type: "hotel", spot: "APA飯店 岡山站前", desc: "【更新住宿】辦理入住並停妥車輛。地址：岡山市北区下石井1-3-12" },
+                { time: "17:00", type: "shopping", spot: "AEON MALL 岡山", desc: "開啟瘋狂購物模式！晚餐在商場內享用岡山備前黑牛燒肉或千屋牛。" }
+            ]},
+            8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於時尚精品汽車旅館型態，普遍提供非常友善的客房吸菸空間。", items: [
+                { time: "09:00", type: "scenic", spot: "岡山後樂園 / 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。" },
+                { time: "12:40", type: "transport", spot: "瀨戶大橋自駕", desc: "【全新行程】自駕跨海返回四國，中途停靠【與島 PA】在海中央拍大橋全景。" },
+                { time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "前往四國水族館或高松唐吉訶德進行最後伴手禮大採購。" },
+                { time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "【全新入住】辦理入住休息。晚上開車前往享用香川名產「骨付鳥」烤雞腿。" }
+            ]},
+            9: { date: "6/21 (日)", weather: "☀️ 晴 28°C", title: "金刀比羅宮 ➔ 天空鳥居 ➔ 還車歸國", focus: "挑戰 785 階一生必去神宮、極致天空之鳥居、還車完美歸國。", smoking: "金刀比羅宮參道沿途有多間商店設有吸菸點；高松機場入關前二樓及出關免稅店旁皆設有乾淨室內吸菸室。", items: [
+                { time: "09:20", type: "scenic", spot: "金刀比羅宮", desc: "【全新優化】從織女星出發只需 50 分鐘！挑戰 785 階參拜海上守護神。" },
+                { time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝聖山頂本宮，從巨大鳥居俯瞰觀音寺市區與瀨戶內海絕美沙灘。" },
+                { time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場營業所結算 SEP 完好交車，搭乘接駁車至櫃台辦理登機。" },
+                { time: "19:05", type: "transport", spot: "華航 CI179 班機", desc: "起飛返回台北，結束完美的 9 天山陽四國絕景購物之旅！" }
+            ]}
+        };
+
+        // 類別標籤與色調對應
+        const categoryMeta = {
+            scenic: { label: '景點', bg: 'bg-[#EAF2F4]', text: 'text-[#4A7C59]', dot: 'bg-[#4A7C59]' },
+            food: { label: '美食', bg: 'bg-[#FDF3E7]', text: 'text-[#D9822B]', dot: 'bg-[#D9822B]' },
+            transport: { label: '交通', bg: 'bg-[#EEF1F6]', text: 'text-[#4B6584]', dot: 'bg-[#4B6584]' },
+            hotel: { label: '住宿', bg: 'bg-[#F2EFE9]', text: 'text-[#7A6F5D]', dot: 'bg-[#7A6F5D]' },
+            shopping: { label: '購物', bg: 'bg-[#F9EBF1]', text: 'text-[#B3547F]', dot: 'bg-[#B3547F]' }
+        };
+
+        // ==========================================
+        // 3. CORE VIEW RENDERING SYSTEM
+        // ==========================================
+        function initApp() {
+            renderDateSelector();
+            changeTab('schedule');
+        }
+
+        function renderDateSelector() {
+            const container = document.getElementById('dateSelector');
+            container.innerHTML = '';
             for (let i = 1; i <= 9; i++) {
-                const btn = document.createElement('button');
-                btn.className = `flex-shrink-0 px-4 py-2 rounded-full text-xs font-bold tracking-wider transition-all duration-200 shadow-sm ${currentDay === i && currentView === 'itinerary' ? 'bg-white text-blue-600 font-extrabold scale-105' : 'bg-white/10 text-white hover:bg-white/20'}`;
-                btn.innerHTML = `D${i}`;
-                btn.onclick = () => { currentView = 'itinerary'; currentDay = i; renderContent(); };
-                tabsContainer.appendChild(btn);
+                const dayObj = mainItinerary[i];
+                const isSelected = selectedDay === i && activeTab === 'schedule';
+                const card = document.createElement('button');
+                card.className = `flex-shrink-0 w-[64px] py-2 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${
+                    isSelected 
+                    ? 'bg-[#EAD9C9] border-[#C4A484] text-[#5C4033] font-bold shadow-sm' 
+                    : 'bg-white/80 border-[#E6DFD1] text-gray-600'
+                }`;
+                card.onclick = () => {
+                    selectedDay = i;
+                    activeTab = 'schedule';
+                    renderDateSelector();
+                    renderSchedule();
+                };
+                card.innerHTML = `
+                    <span class="text-[10px] uppercase tracking-tighter opacity-80">Day ${i}</span>
+                    <span class="text-xs font-bold mt-0.5">${dayObj.date.split(' ')[0]}</span>
+                `;
+                container.appendChild(card);
             }
         }
 
-        function switchView(view) {
-            currentView = view;
-            document.getElementById('nav-itinerary').className = `flex flex-col items-center transition-all ${view === 'itinerary' ? 'text-blue-600 font-bold' : 'text-gray-400'}`;
-            document.getElementById('nav-budget').className = `flex flex-col items-center transition-all ${view === 'budget' ? 'text-blue-600 font-bold' : 'text-gray-400'}`;
-            renderContent();
-        }
-
-        function renderContent() {
-            renderTabs();
-            const container = document.getElementById('mainContent');
+        function changeTab(tabName) {
+            activeTab = tabName;
+            const tabs = ['schedule', 'bookings', 'expense', 'planning', 'members'];
+            tabs.forEach(t => {
+                const navBtn = document.getElementById(`nav-${t}`);
+                if (t === tabName) {
+                    navBtn.className = "flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all";
+                } else {
+                    navBtn.className = "flex flex-col items-center text-gray-400 active:scale-95 transition-all";
+                }
+            });
+            renderDateSelector(); // 更新頂部膠囊狀態
             
-            if (currentView === 'itinerary') {
-                const data = itineraryData[currentDay];
-                let timelineHtml = '';
-                data.timeline.forEach(item => {
-                    timelineHtml += `
-                        <div class="flex gap-3 relative pb-4 last:pb-0">
-                            <div class="absolute top-2 bottom-0 left-[21px] w-[2px] bg-blue-100 last:hidden"></div>
-                            <span class="bg-blue-50 text-blue-600 font-mono text-[11px] font-bold px-2 py-1 rounded-md h-fit shadow-sm z-10 w-24 text-center border border-blue-100">${item.time}</span>
-                            <p class="text-xs text-gray-700 leading-relaxed pt-0.5">${item.desc}</p>
-                        </div>
-                    `;
-                });
-
-                let mapsHtml = '';
-                data.maps.forEach(map => {
-                    mapsHtml += `
-                        <a href="${map.url}" target="_blank" class="flex justify-between items-center bg-gray-50 border border-gray-100 hover:bg-blue-50/50 p-2.5 rounded-xl transition-all">
-                            <span class="text-xs font-medium text-gray-700 truncate max-w-[85%]"><i class="fa-solid fa-location-dot text-red-400 mr-2"></i>${map.name}</span>
-                            <i class="fa-solid fa-arrow-up-right-from-square text-gray-400 text-xs"></i>
-                        </a>
-                    `;
-                });
-
-                container.innerHTML = `
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4 animate-fade-in">
-                        <div class="flex justify-between items-start mb-2">
-                            <span class="bg-blue-600 text-white font-mono text-[10px] uppercase tracking-wider px-2.5 py-0.5 rounded-full font-bold">Day ${currentDay} • ${data.date}</span>
-                        </div>
-                        <h2 class="text-base font-bold text-gray-900 mb-1">${data.title}</h2>
-                        <p class="text-xs text-indigo-600 font-medium bg-indigo-50/60 px-2.5 py-1.5 rounded-lg border border-indigo-50"><i class="fa-solid fa-star mr-1"></i>今日重點：${data.focus}</p>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-                        <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase mb-3"><i class="fa-solid fa-route mr-1.5"></i>精準時間軸動線</h3>
-                        <div class="space-y-4">${timelineHtml}</div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-                        <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase mb-3"><i class="fa-solid fa-map mr-1.5"></i>景點與住宿導航</h3>
-                        <div class="space-y-2">${mapsHtml}</div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3 mb-4">
-                        <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-                            <h4 class="text-[11px] font-bold text-gray-400 mb-1"><i class="fa-solid fa-car text-blue-500 mr-1"></i>交通與路費</h4>
-                            <p class="text-[11px] text-gray-600 leading-normal">${data.transport}</p>
-                        </div>
-                        <div class="bg-white rounded-2xl p-3 shadow-sm border border-gray-100">
-                            <h4 class="text-[11px] font-bold text-gray-400 mb-1"><i class="fa-solid fa-coins text-amber-500 mr-1"></i>預估日常花費</h4>
-                            <p class="text-[11px] text-gray-600 leading-normal">${data.estExpense}</p>
-                        </div>
-                    </div>
-
-                    <div class="bg-amber-50 border border-amber-200/70 rounded-2xl p-3.5 shadow-sm">
-                        <h4 class="text-xs font-bold text-amber-900 mb-1.5 flex items-center">
-                            <i class="fa-solid fa-smoking text-amber-600 mr-1.5 text-sm animate-pulse"></i>💡 專屬吸菸提示（男方至寶）
-                        </h4>
-                        <p class="text-[11px] text-amber-800 leading-relaxed font-medium">${data.smoking}</p>
-                    </div>
-                `;
-            } else if (currentView === 'budget') {
-                let totalJpy = expenses.reduce((sum, item) => sum + item.amount, 0);
-                let totalTwd = Math.round(totalJpy * 0.197); // 匯率換算精確點
-
-                let listHtml = '';
-                expenses.forEach(item => {
-                    listHtml += `
-                        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-gray-100 shadow-sm">
-                            <div>
-                                <p class="text-xs font-medium text-gray-800">${item.text}</p>
-                                <p class="text-[10px] text-gray-400">~台幣 ${Math.round(item.amount * 0.197)} 元</p>
-                            </div>
-                            <div class="flex items-center gap-3">
-                                <span class="font-mono text-xs font-bold text-gray-900">${item.amount.toLocaleString()} ￥</span>
-                                <button onclick="deleteExpense(${item.id})" class="text-gray-300 hover:text-red-500 transition-all"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                            </div>
-                        </div>
-                    `;
-                });
-
-                container.innerHTML = `
-                    <div class="bg-gradient-to-br from-gray-900 to-slate-800 rounded-2xl p-4 text-white shadow-lg mb-4">
-                        <p class="text-[10px] text-gray-400 tracking-wider uppercase font-bold">日幣累計總花費</p>
-                        <h2 class="text-2xl font-mono font-black mt-0.5 text-amber-400">${totalJpy.toLocaleString()} <span class="text-xs font-normal text-white">JPY</span></h2>
-                        <div class="border-t border-white/10 mt-2 pt-2 flex justify-between items-center text-[11px] text-gray-300">
-                            <span>即時換算台幣</span>
-                            <span class="font-bold font-mono text-white text-xs">~ NT$ ${totalTwd.toLocaleString()} 元</span>
-                        </div>
-                    </div>
-
-                    <div class="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 mb-4">
-                        <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase mb-3">新增消費紀錄</h3>
-                        <div class="flex gap-2">
-                            <input type="text" id="expText" placeholder="項目 (如: 買紙膠帶)" class="flex-grow border border-gray-200 text-xs rounded-xl px-3 py-2 focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <input type="number" id="expAmount" placeholder="日幣金額" class="w-24 border border-gray-200 text-xs rounded-xl px-3 py-2 text-center font-mono focus:outline-none focus:ring-1 focus:ring-blue-500">
-                            <button onclick="addExpense()" class="bg-blue-600 text-white px-4 py-2 rounded-xl text-xs font-bold shadow-sm hover:bg-blue-700 transition-all"><i class="fa-solid fa-plus"></i></button>
-                        </div>
-                    </div>
-
-                    <div class="space-y-2 max-h-[40vh] overflow-y-auto hide-scrollbar">
-                        <h3 class="text-xs font-bold text-gray-400 tracking-wider uppercase px-1">消費清單明細</h3>
-                        ${listHtml || '<p class="text-center text-xs text-gray-400 py-6">目前尚無任何記帳紀錄</p>'}
-                    </div>
-                `;
-            }
+            if (tabName === 'schedule') renderSchedule();
+            else if (tabName === 'bookings') renderBookings();
+            else if (tabName === 'expense') renderExpense();
+            else if (tabName === 'planning') renderPlanning();
+            else if (tabName === 'members') renderMembers();
         }
 
-        // Budget Handlers
+        // --- MODULE 1: SCHEDULE (行程) ---
+        function renderSchedule() {
+            const data = mainItinerary[selectedDay];
+            const container = document.getElementById('appBody');
+            
+            let timelineHtml = '';
+            data.items.forEach(item => {
+                const meta = categoryMeta[item.type];
+                timelineHtml += `
+                    <div class="flex gap-4 relative pb-6 last:pb-0">
+                        <div class="w-10 flex-shrink-0 flex flex-col items-center">
+                            <span class="text-xs font-mono font-bold text-[#688B9A]">${item.time}</span>
+                            <div class="w-2.5 h-2.5 rounded-full ${meta.dot} mt-2 shadow-sm z-10"></div>
+                        </div>
+                        <div class="flex-grow bg-white border-2 border-[#E6DFD1] rounded-2xl p-3 shadow-sm hover:shadow-md transition-all">
+                            <div class="flex justify-between items-center mb-1.5">
+                                <span class="text-xs font-bold text-gray-900">${item.spot}</span>
+                                <span class="${meta.bg} ${meta.text} text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5">${meta.label}</span>
+                            </div>
+                            <p class="text-[11px] text-gray-600 leading-relaxed">${item.desc}</p>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="diary-card p-4 mb-4 bg-white">
+                    <div class="flex justify-between items-center mb-2">
+                        <h2 class="text-sm font-bold text-[#4A7C59]">✨ Day ${selectedDay} • 行程手札</h2>
+                        <span class="bg-[#F4F1EA] border border-[#D9D2C2] text-xs px-2.5 py-0.5 rounded-full font-medium text-gray-700">${data.weather}</span>
+                    </div>
+                    <p class="text-xs text-gray-800 font-medium bg-[#EBF3F5] border border-[#B2CCD4] p-2 rounded-xl leading-relaxed">
+                        📌 <span class="font-bold">今日焦點：</span>${data.focus}
+                    </p>
+                </div>
+
+                <div class="diary-card p-4 mb-4 bg-white relative timeline-line">
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-clock-rotate-left mr-1"></i>時間移動軌跡</h3>
+                    <div class="space-y-1">${timelineHtml}</div>
+                </div>
+
+                <div class="bg-[#FCF9F2] border-2 border-dashed border-[#D1C7BD] rounded-2xl p-3.5 shadow-sm">
+                    <h4 class="text-xs font-bold text-[#A67C52] mb-1 flex items-center gap-1.5">
+                        <i class="fa-solid fa-smoking text-amber-700 text-xs"></i> 💡 隨行吸菸環境記事 (男方必備)
+                    </h4>
+                    <p class="text-[11px] text-[#8C6D4F] leading-relaxed">${data.smoking}</p>
+                </div>
+            `;
+        }
+
+        // --- MODULE 2: BOOKINGS (預訂) ---
+        function renderBookings() {
+            const container = document.getElementById('appBody');
+            container.innerHTML = `
+                <div class="diary-card overflow-hidden bg-white mb-4 relative">
+                    <div class="bg-[#688B9A] text-white px-4 py-2 text-xs font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
+                        <span>✈️ BOARDING PASS / 華航回程</span>
+                        <span class="font-mono">CI179</span>
+                    </div>
+                    <div class="p-4 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
+                        <div>
+                            <p class="text-xl font-bold font-mono text-gray-800">TAK</p>
+                            <p class="text-[10px] text-gray-400">高松機場</p>
+                        </div>
+                        <div class="flex flex-col items-center justify-center">
+                            <p class="text-[10px] font-mono text-[#688B9A] font-bold">2026.06.21</p>
+                            <div class="w-full h-[2px] bg-gray-200 relative my-1">
+                                <i class="fa-solid fa-plane text-xs text-[#688B9A] absolute -top-1.5 left-1/2 -translate-x-1/2 bg-white px-1"></i>
+                            </div>
+                            <p class="text-[9px] text-gray-400">19:05 起飛</p>
+                        </div>
+                        <div>
+                            <p class="text-xl font-bold font-mono text-gray-800">TPE</p>
+                            <p class="text-[10px] text-gray-400">桃園台北</p>
+                        </div>
+                    </div>
+                    <div class="bg-[#F4F1EA] px-4 py-2 border-t border-[#E6DFD1] text-[10px] flex justify-between text-gray-500 font-mono">
+                        <span>PNR: CI-TAK88921</span>
+                        <span class="text-gray-700 font-bold">已在線報到</span>
+                    </div>
+                </div>
+
+                <div class="diary-card p-4 bg-white mb-4 space-y-4">
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>下榻旅宿與分攤費用</h3>
+                    
+                    <div class="text-xs space-y-3">
+                        <div class="p-2.5 bg-[#F9F8F5] border border-[#E6DFD1] rounded-xl">
+                            <div class="flex justify-between font-bold text-gray-800 mb-1">
+                                <span>🏨 D7: APA飯店 岡山站前</span>
+                                <span class="text-[#4A7C59]">¥9,800/晚</span>
+                            </div>
+                            <p class="text-[10px] text-gray-400">地址：岡山県岡山市北区下石井1丁目3-12</p>
+                            <p class="text-[10px] text-indigo-600 font-medium mt-1">💰 每人分攤：¥4,900 (~台幣 965 元)</p>
+                        </div>
+
+                        <div class="p-2.5 bg-[#F9F8F5] border border-[#E6DFD1] rounded-xl">
+                            <div class="flex justify-between font-bold text-gray-800 mb-1">
+                                <span>🏨 D8: 高松織女星精品飯店</span>
+                                <span class="text-[#4A7C59]">¥12,000/晚</span>
+                            </div>
+                            <p class="text-[10px] text-gray-400">地址：香川県高松市東山崎町224-1 (免費雙人車庫)</p>
+                            <p class="text-[10px] text-indigo-600 font-medium mt-1">💰 每人分攤：¥6,000 (~台幣 1,180 元)</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="diary-card p-4 bg-white">
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-car mr-1"></i>自駕租車車況明細</h3>
+                    <div class="mt-2 text-xs space-y-1 text-gray-700">
+                        <p><span class="font-bold text-gray-900">🚙 租車公司：</span>NISSAN Rent-A-Car 高松機場店</p>
+                        <p><span class="font-bold text-gray-900">⏱️ 取還時間：</span>6/13 19:00 取 ➔ 6/21 16:00 還</p>
+                        <p><span class="font-bold text-gray-900">🎟️ 附加通行証：</span>內含山陰四國 9 日 SEP 全配免過路費</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- MODULE 3: EXPENSE (記帳) ---
+        function renderExpense() {
+            const container = document.getElementById('appBody');
+            let totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
+            let totalTwd = Math.round(totalJpy * 0.197);
+
+            let listHtml = '';
+            expenseLedger.forEach((item, index) => {
+                listHtml += `
+                    <div class="flex justify-between items-center bg-[#FDFDFD] p-3 rounded-xl border border-[#E6DFD1]">
+                        <div>
+                            <p class="text-xs font-bold text-gray-800">${item.text}</p>
+                            <p class="text-[10px] text-gray-400">付款：${item.payer} | ${item.split}</p>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-xs font-bold text-gray-900">¥${item.amountJpy.toLocaleString()}</span>
+                            <button onclick="deleteExpense(${index})" class="text-gray-300 hover:text-red-500 active:scale-90 transition-all"><i class="fa-solid fa-trash-can text-xs"></i></button>
+                        </div>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="diary-card p-4 bg-gradient-to-br from-[#688B9A] to-[#557583] text-white mb-4">
+                    <p class="text-[10px] text-blue-100 tracking-wider font-bold">📊 日誌累計總支出明細</p>
+                    <h2 class="text-2xl font-mono font-black text-amber-300 mt-1">¥ ${totalJpy.toLocaleString()} <span class="text-xs font-normal text-white">JPY</span></h2>
+                    <div class="border-t border-white/20 mt-2 pt-2 flex justify-between text-xs text-blue-50">
+                        <span>預估換算台幣金額</span>
+                        <span class="font-bold font-mono">~ NT$ ${totalTwd.toLocaleString()} 元</span>
+                    </div>
+                </div>
+
+                <div class="diary-card p-4 bg-white mb-4">
+                    <h3 class="text-xs font-bold text-gray-400 mb-3">🖊️ 紀錄一筆花費吧</h3>
+                    <div class="space-y-2 text-xs">
+                        <input type="text" id="expText" placeholder="支出項目 (如：買藥妝、吃拉麵)" class="w-full border border-[#E6DFD1] rounded-xl px-3 py-2 focus:outline-none">
+                        <div class="flex gap-2">
+                            <input type="number" inputmode="numeric" id="expJpy" placeholder="日幣金額 (¥)" class="w-1/2 border border-[#E6DFD1] rounded-xl px-3 py-2 font-mono text-center focus:outline-none">
+                            <select id="expPayer" class="w-1/2 border border-[#E6DFD1] rounded-xl px-2 py-2 bg-white focus:outline-none">
+                                ${membersList.map(m => `<option>${m.name}</option>`).join('')}
+                            </select>
+                        </div>
+                        <button onclick="addExpense()" class="w-full diary-btn-blue py-2 text-xs font-bold shadow-sm active:scale-95 transition-all">手帳記帳確認</button>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-400 px-1">📋 支出歷史明細紙條</h3>
+                    <div class="space-y-2 max-h-[25vh] overflow-y-auto hide-scrollbar">
+                        ${listHtml || '<p class="text-center text-xs text-gray-400 py-4">目前尚無手帳記帳紀錄</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
         function addExpense() {
             const text = document.getElementById('expText').value.trim();
-            const amount = parseInt(document.getElementById('expAmount').value);
-            if (!text || isNaN(amount)) return;
-            expenses.push({ id: Date.now(), text, amount });
-            localStorage.setItem('trip_expenses', JSON.stringify(expenses));
-            renderContent();
-        }
+            const amountJpy = parseInt(document.getElementById('expJpy').value);
+            const payer = document.getElementById('expPayer').value;
+            if (!text || isNaN(amountJpy)) return;
 
-        function deleteExpense(id) {
-            expenses = expenses.filter(item => item.id !== id);
-            localStorage.setItem('trip_expenses', JSON.stringify(expenses));
-            renderContent();
-        }
+            const newExp = { id: 'ex_' + Date.now(), text, amountJpy, payer, split: '雙人均分' };
+            expenseLedger.push(newExp);
+            localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
 
-        // Privacy Booking Lock System (007 Pin Verification)
-        function openBookingModal() {
-            document.getElementById('bookingModal').classList.remove('hidden');
-            setTimeout(() => {
-                document.getElementById('bookingBox').classList.remove('scale-95', 'opacity-0');
-            }, 50);
-        }
-
-        function closeBookingModal() {
-            document.getElementById('bookingBox').classList.add('scale-95', 'opacity-0');
-            setTimeout(() => {
-                document.getElementById('bookingModal').classList.add('hidden');
-                document.getElementById('pinArea').classList.remove('hidden');
-                document.getElementById('bookingContent').classList.add('hidden');
-                document.getElementById('pinInput').value = '';
-            }, 200);
-        }
-
-        function verifyPin() {
-            const pin = document.getElementById('pinInput').value;
-            if (pin === '007') {
-                document.getElementById('pinArea').classList.add('hidden');
-                document.getElementById('bookingContent').classList.remove('hidden');
-            } else {
-                alert('密碼錯誤！提示：原設定密碼');
-                document.getElementById('pinInput').value = '';
+            // Firebase 即時數據備份同步 (若有設定)
+            if (db) {
+                db.collection("expenses").doc(newExp.id).set(newExp).catch(e => console.log("快取儲存中，等候在線同步"));
             }
+
+            renderExpense();
         }
 
-        // Initialize view
-        renderContent();
+        function deleteExpense(index) {
+            const item = expenseLedger[index];
+            expenseLedger.splice(index, 1);
+            localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+            
+            if (db && item.id) {
+                db.collection("expenses").doc(item.id).delete().catch(e => console.log("快取刪除中"));
+            }
+            renderExpense();
+        }
+
+        // --- MODULE 4: PLANNING (準備) ---
+        function renderPlanning() {
+            const container = document.getElementById('appBody');
+            
+            let htmlTodo = '', htmlBaggage = '', htmlShopping = '';
+            checklistData.forEach(item => {
+                const li = `
+                    <label class="flex items-center justify-between p-2 bg-[#FAF9F6] border border-[#E6DFD1] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                        <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
+                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleCheck(${item.id})" class="w-4 h-4 rounded border-gray-300 text-[#4A7C59] focus:ring-0">
+                    </label>
+                `;
+                if (item.type === 'todo') htmlTodo += li;
+                else if (item.type === 'baggage') htmlBaggage += li;
+                else if (item.type === 'shopping') htmlShopping += li;
+            });
+
+            container.innerHTML = `
+                <div class="diary-card p-4 bg-white space-y-4">
+                    <div>
+                        <h3 class="text-xs font-bold text-[#4A7C59] mb-2"><i class="fa-solid fa-list-check mr-1"></i>行前待辦事項 (Todo)</h3>
+                        <div class="space-y-1.5">${htmlTodo || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-[#688B9A] mb-2"><i class="fa-solid fa-suitcase mr-1"></i>行李打包清單 (Baggage)</h3>
+                        <div class="space-y-1.5">${htmlBaggage || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
+                    </div>
+                    <div>
+                        <h3 class="text-xs font-bold text-[#D9822B] mb-2"><i class="fa-solid fa-basket-shopping mr-1"></i>預定瘋狂購物清單 (Shopping)</h3>
+                        <div class="space-y-1.5">${htmlShopping || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function toggleCheck(id) {
+            checklistData = checklistData.map(item => item.id === id ? { ...item, done: !item.done } : item);
+            localStorage.setItem('c_list', JSON.stringify(checklistData));
+            renderPlanning();
+        }
+
+        // --- MODULE 5: MEMBERS (成員) ---
+        function renderMembers() {
+            const container = document.getElementById('appBody');
+            let membersHtml = '';
+            membersList.forEach((m, idx) => {
+                membersHtml += `
+                    <div class="flex items-center justify-between bg-[#FDFDFD] p-3 rounded-xl border-2 border-[#E6DFD1]">
+                        <div class="flex items-center gap-3">
+                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-[#688B9A] shadow-inner">
+                            <div>
+                                <p class="text-xs font-bold text-gray-800">${m.name}</p>
+                                <p class="text-[9px] text-gray-400 font-mono">ID: USER_0${idx+1}</p>
+                            </div>
+                        </div>
+                        <label class="diary-btn-blue text-[10px] px-3 py-1 font-bold shadow-sm cursor-pointer active:scale-95 transition-all">
+                            換頭像 <input type="file" accept="image/*" class="hidden" onchange="compressAndUploadAvatar(event, ${idx})">
+                        </label>
+                    </div>
+                `;
+            });
+
+            container.innerHTML = `
+                <div class="diary-card p-4 bg-white space-y-4">
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-users-rectangle mr-1"></i>手帳旅伴名冊</h3>
+                    <div class="space-y-3">${membersHtml}</div>
+                </div>
+            `;
+        }
+
+        // 前端進行圖片壓縮與 Firebase Storage 上傳處理
+        function compressAndUploadAvatar(event, idx) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = function (e) {
+                const img = new Image();
+                img.src = e.target.result;
+                img.onload = function () {
+                    // Canvas 高端像素前端壓縮
+                    const canvas = document.createElement('canvas');
+                    const ctx = canvas.getContext('2d');
+                    const maxW = 150;
+                    const scale = maxW / img.width;
+                    canvas.width = maxW;
+                    canvas.height = img.height * scale;
+                    
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    // 更新網頁視圖快取
+                    membersList[idx].avatar = compressedDataUrl;
+                    localStorage.setItem('m_list', JSON.stringify(membersList));
+                    document.getElementById(`avatar-img-${idx}`).src = compressedDataUrl;
+
+                    // 若 Firebase 開通則上傳至 Storage
+                    if (storage) {
+                        const storageRef = storage.ref(`avatars/user_${idx}.jpg`);
+                        storageRef.putString(compressedDataUrl, 'data_url').then(snapshot => {
+                            console.log('Firebase Storage 上傳成功！');
+                        });
+                    }
+                };
+            };
+        }
+
+        // 啟動全網頁手帳系統
+        initApp();
     </script>
 </body>
 </html>
