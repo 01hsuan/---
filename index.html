@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌊 山陽四國．手帳風情侶自駕遊</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts 圓體 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+TC:wght@400;500;700&display=swap">
     
+    <!-- Firebase App & Services -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
@@ -50,6 +54,7 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-28 text-gray-800">
 
+    <!-- Top Scrapbook Header -->
     <header class="bg-[#688B9A] text-white px-5 pt-6 pb-5 rounded-b-[32px] shadow-md border-b-4 border-[#4E6E7B] sticky top-0 z-40">
         <div class="flex justify-between items-center mb-4">
             <div>
@@ -63,11 +68,14 @@
             </div>
         </div>
         
+        <!-- 橫向捲動日期選擇器 -->
         <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector"></div>
     </header>
 
+    <!-- Main Content Stage -->
     <main class="px-4 py-4 flex-grow" id="appBody"></main>
 
+    <!-- 行程詳情與照片上傳彈窗 (Modal) -->
     <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
         <div class="bg-white rounded-3xl w-full max-w-sm p-5 border-2 border-[#E6DFD1] shadow-2xl relative max-h-[85vh] overflow-y-auto hide-scrollbar">
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-circle-xmark text-xl"></i></button>
@@ -75,6 +83,7 @@
         </div>
     </div>
 
+    <!-- 底部導航列 -->
     <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-40 rounded-2xl p-2 flex justify-around items-center">
         <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all">
             <i class="fa-solid fa-compass text-lg mb-0.5"></i>
@@ -127,25 +136,53 @@
         let activeTab = 'schedule';
         let selectedDay = 1;
 
-        // 成員名冊大修正: George & Charlotte
+        // 成員名冊優化: 僅留下名字，不加上頭銜與標籤
         let membersList = JSON.parse(localStorage.getItem('m_list')) || [
-            { id: 'm1', name: 'George (車手/吸菸)', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
-            { id: 'm2', name: 'Charlotte (總監/購物)', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
+            { id: 'm1', name: 'George', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
+            { id: 'm2', name: 'Charlotte', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
         ];
 
         // 離線景點照片庫
         let spotPhotos = JSON.parse(localStorage.getItem('spot_photos')) || {};
 
-        let checklistData = JSON.parse(localStorage.getItem('c_list')) || [
-            { id: 1, type: 'todo', text: '線上申辦國際駕照與日文譯本', done: true },
-            { id: 2, type: 'baggage', text: 'George 必備打火機與備用菸草', done: false },
-            { id: 3, type: 'shopping', text: '倉敷美觀限定紙膠帶與文具', done: false }
+        // 獨立行前待辦
+        let todoData = JSON.parse(localStorage.getItem('todo_data')) || [
+            { id: 't1', text: '線上申辦國際駕照與日文譯本', done: true },
+            { id: 't2', text: '填寫 Visit Japan Web 申報 QR Code', done: false }
         ];
 
+        // 行李打包清單結構優化 (按項目分組)
+        let baggageData = JSON.parse(localStorage.getItem('baggage_groups')) || {
+            "日本旅遊必帶: 證件與重要資料": [
+                { id: "b1_1", text: "護照", done: false },
+                { id: "b1_2", text: "機票或電子登機證", done: false },
+                { id: "b1_3", text: "現金", done: false },
+                { id: "b1_4", text: "信用卡", done: false },
+                { id: "b1_5", text: "旅遊保險資料、住宿／交通憑證備份", done: false }
+            ],
+            "盥洗與個人用品": [
+                { id: "b2_1", text: "牙刷牙膏、刮鬍刀、毛巾", done: false },
+                { id: "b2_2", text: "梳子、小罐洗髮精與沐浴乳", done: false },
+                { id: "b2_3", text: "化妝包、防曬乳、化妝棉／棉花棒", done: false },
+                { id: "b2_4", text: "女性生理用品", done: false },
+                { id: "b2_5", text: "個人藥品", done: false }
+            ],
+            "3C配件與充電設備": [
+                { id: "b3_1", text: "行動電源", done: false },
+                { id: "b3_2", text: "充電器、相機、耳機", done: false },
+                { id: "b3_3", text: "eSIM／漫遊", done: false }
+            ],
+            "購物與便利小物": [
+                { id: "b4_1", text: "傘", done: false },
+                { id: "b4_2", text: "面紙、濕紙巾", done: false },
+                { id: "b4_3", text: "旅行用摺疊購物袋", done: false }
+            ]
+        };
+
         let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [
-            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: 'George (車手/吸菸)', split: '雙人均分' },
-            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: 'Charlotte (總監/購物)', split: '雙人均分' },
-            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: 'George (車手/吸菸)', split: '雙人均分' }
+            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: 'George', split: '雙人均分' },
+            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: 'Charlotte', split: '雙人均分' },
+            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: 'George', split: '雙人均分' }
         ];
 
         // 包含完整備註與地圖代碼的 9 日手帳大數據
@@ -165,7 +202,7 @@
             3: { date: "6/15 (一)", weather: "🌧️ 局部雨 22°C", title: "松山城 ➔ 萬翠莊 ➔ 大街道購物日", focus: "體驗松山城單人空中吊椅、大街道與銀天街強大購物行程。", smoking: "松山城山頂廣場指定位置設有吸菸區；大街道商店街內部分柏青哥店或指定居酒屋有吸菸室。", items: [
                 { id: "3_1", time: "09:00", type: "scenic", spot: "松山城空中吊椅", desc: "搭乘超酷的「單人無安全帶吊椅」登上松山城天守。", note: "套票雙人 2,080 日圓。可以俯瞰整個松山市區與瀨戶內海。", map: "https://maps.google.com/?q=Matsuyama+Castle+Ropeway" },
                 { id: "3_2", time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀法國文藝復興風格的浪漫洋樓。", note: "大正時期由久松定謨伯爵建造的別邸，非常適合拍照。", map: "https://maps.google.com/?q=Bansuisou" },
-                { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝聖【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://maps.google.com/?q=Matsuyama+Okaido+Shopping+Street" }
+                { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝盛【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://maps.google.com/?q=Matsuyama+Okaido+Shopping+Street" }
             ]},
             4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。", smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」都有極棒的戶外喫煙所。", items: [
                 { id: "4_1", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "大島最具代表性景點，隈研吾設計的無機調木質全景觀景台。", note: "能 360 度俯瞰壯觀的來島海峽大橋，美到令人摒息。", map: "https://maps.google.com/?q=Kirosan+Observatory+Park" },
@@ -180,24 +217,24 @@
                 { id: "5_4", time: "19:00", type: "food", spot: "廣島燒名店【鐵太】或【電光石火】", desc: "回廣島市區，安排正宗大份量廣島燒晚餐。", note: "看著師傅在面前的大鐵板上層層堆疊高麗菜、五花肉與炒麵，視覺味覺雙重享受。", map: "https://maps.google.com/?q=Chinchikurin+Hiroshima" }
             ]},
             6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城 ➔ 宿：鞆之浦海景", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，但部分的開闊停車場設有集菸桶。", items: [
-                { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳下記得來一碗經典的背脂「尾道拉麵」當午餐。", map: "https://maps.google.com/?q=Senkoji+Park" },
+                { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳記得到一碗經典的背脂「尾道拉麵」當午餐。", map: "https://maps.google.com/?q=Senkoji+Park" },
                 { id: "6_2", time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪奇蹟般建在斷崖絕壁上的朱紅色觀音寺廟。", note: "雙人門票 400 日圓，海水擊打礁石的畫面極度震撼。", map: "https://maps.google.com/?q=Abuto+Kannon" },
                 { id: "6_3", time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 包棟老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步。", note: "這裏是宮崎駿「崖上的波妞」靈感發源地，極具江戶港町風情，晚餐吃鯛魚料理。", map: "https://maps.google.com/?q=Tomonoura+Joyato+Lighthouse" }
             ]},
             7: { date: "6/19 (五)", weather: "☀️ 晴 26°C", title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物", focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購。", smoking: "倉敷美觀地區中央公廁旁、以及大型收費停車場周邊有指定吸菸區。APA飯店內有專用吸菸室。", items: [
                 { id: "7_1", time: "09:00", type: "scenic", spot: "福禪寺 對潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。", note: "雙人門票 400 日圓，窗框望出去就像一幅精緻的浮世繪山水畫。", map: "https://maps.google.com/?q=Fukuzenji+Taichorou" },
                 { id: "7_2", time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "漫遊水鄉。中午吃名物 Kappa 炸豬排。下午沿著倉敷川散步。", note: "有非常多充滿設計感的文具與紙膠帶小店，Charlotte 保證淪陷。", map: "https://maps.google.com/?q=Kurashiki+Bikan+Historical+Quarter" },
-                { id: "7_3", time: "16:30", type: "hotel", spot: "APA飯店 岡山站前", desc: "【更新住宿】辦理入住並停妥車。地址：岡山県岡山市北区下石井1丁目3-12", note: "飯店停車費約 1,500 日圓。下車立刻連通地下街。", map: "https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae" },
+                { id: "7_3", time: "16:30", type: "hotel", spot: "APA飯店 岡山站前店", desc: "地址：岡山県岡山市北区下石井1丁目3-12", note: "飯店停車費約 1,500 日圓。下車立刻連通地下街。", map: "https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae" },
                 { id: "7_4", time: "17:00", type: "shopping", spot: "AEON MALL 岡山大採購", desc: "步行前往與車站相連的超級巨大 AEON，開啟瘋狂採購模式！", note: "晚餐在商場內安排享用高級岡山備前黑牛燒肉或千屋牛。", map: "https://maps.google.com/?q=AEON+MALL+Okayama" }
             ]},
             8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於汽車旅館型態，客房寬敞且皆提供非常友善的吸菸環境。", items: [
                 { id: "8_1", time: "09:00", type: "scenic", spot: "岡山後樂園 & 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。", note: "共通券雙人 1,280 日圓。可以過橋一起悠閒散步。", map: "https://maps.google.com/?q=Okayama+Korakuen" },
-                { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "【全新行程】開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://maps.google.com/?q=Yoshima+Parking+Area" },
+                { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://maps.google.com/?q=Yoshima+Parking+Area" },
                 { id: "8_3", time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "若想看海景海豚表演可去四國水族館；若購物則主攻高松唐吉訶德伴手禮最後大採購。", note: "今天開車油資預估約 1,200 日圓。", map: "https://maps.google.com/?q=youme+Town+Takamatsu" },
-                { id: "8_4", time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "【全新入住】地址：香川県高松市東山崎町224-1", note: "辦理入住稍作休息。晚上開車前往高松市區享用來香川必吃的「骨付鳥」慶功宴。", map: "https://maps.google.com/?q=Hotel+Vega+Takamatsu" }
+                { id: "8_4", time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "地址：香川県高松市東山崎町224-1", note: "辦理入住稍作休息。晚上開車前往高松市區享用來香川必吃的「骨付鳥」慶功宴。", map: "https://maps.google.com/?q=Hotel+Vega+Takamatsu" }
             ]},
             9: { date: "6/21 (日)", weather: "☀️ 晴 28°C", title: "金刀比羅宮 ➔ 天空鳥居 ➔ 還車歸國", focus: "挑戰 785 階一生必去神宮、極致天空之鳥居、還車完美歸國。", smoking: "金刀比羅宮參道沿途有多間商店設有吸菸點；高松機場入關前二樓及出關免稅店旁皆設有乾淨室內吸菸室。", items: [
-                { id: "9_1", time: "09:20", type: "scenic", spot: "金刀比羅宮挑戰", desc: "【全新優化】從織女星飯店開車只需 50 分鐘！步行登上 785 階到達本宮。", note: "參拜海上守護神，下山後在參道吃一碗現切讚岐烏龍麵當午餐。", map: "https://maps.google.com/?q=Kotohira-gu" },
+                { id: "9_1", time: "09:20", type: "scenic", spot: "金刀比羅宮挑戰", desc: "從織女星飯店開車只需 50 分鐘！步行登上 785 階到達本宮。", note: "參拜海上守護神，下山後在參道吃一碗現切讚岐烏龍麵當午餐。", map: "https://maps.google.com/?q=Kotohira-gu" },
                 { id: "9_2", time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝聖位於觀音寺市山頂的本宮。", note: "從巨大的石造鳥居向下俯瞰，市區與瀨戶內海的圓弧沙灘猶如人間仙境。", map: "https://maps.google.com/?q=Takaya+Shrine" },
                 { id: "9_3", time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場旁的營業所加滿油完好還車。加滿油資約 3,500 日圓。", note: "還車後搭乘接駁車抵達航廈，辦理華航登機手續，在免稅店做最後補貨。", map: "https://maps.google.com/?q=NISSAN+Rent+A+Car+Takamatsu+Airport" },
                 { id: "9_4", time: "19:05", type: "transport", spot: "中華航空 CI179 班機", desc: "起飛返回台北，結東九天山陽四國的甜蜜手帳自駕回憶！", note: "高松機場入關前後皆有非常乾淨的室內吸菸室，登機前 George 可以舒適巡禮。", map: "https://maps.google.com/?q=Takamatsu+Airport" }
@@ -371,10 +408,11 @@
             };
         }
 
-        // --- MODULE 2: BOOKINGS (機票去回程 & 住宿台幣分攤大補貼) ---
+        // --- MODULE 2: BOOKINGS (機票與住宿分攤大補貼) ---
         function renderBookings() {
             const container = document.getElementById('appBody');
             container.innerHTML = `
+                <!-- 雙登機證：去程與回程 -->
                 <div class="diary-card overflow-hidden bg-white mb-4 relative">
                     <div class="bg-[#4A7C59] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
                         <span>✈️ OUTBOUND PASS / 華航去程</span>
@@ -407,6 +445,7 @@
                     </div>
                 </div>
 
+                <!-- 住宿卡片大補貼：四間全面到齊 -->
                 <div class="diary-card p-4 bg-white mb-4 space-y-3">
                     <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>精確房間預訂與台幣分攤金額</h3>
                     
@@ -414,7 +453,7 @@
                         <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
                             <p class="font-bold text-gray-900">🏨 6/13-14 Hostel JAQ takamatsu</p>
                             <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,403 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,202 元</p>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,201.5 元</p>
                         </div>
                         <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
                             <p class="font-bold text-gray-900">🏨 6/14-16 松山全日空皇冠假日飯店</p>
@@ -428,8 +467,18 @@
                         </div>
                         <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
                             <p class="font-bold text-gray-900">🏨 6/18-19 鞆の浦 Airbnb 包棟</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 1,190 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 595 元</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 1,910 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 955 元</p>
+                        </div>
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/19-20 APA 岡山站前店</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,476 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,238 元</p>
+                        </div>
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/20-21 高松織女星飯店</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,409 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,204.5 元</p>
                         </div>
                     </div>
                 </div>
@@ -509,38 +558,80 @@
             renderExpense();
         }
 
-        // --- MODULE 4: PLANNING (準備) ---
+        // --- MODULE 4: PLANNING (準備 - 行李清單全面重整) ---
         function renderPlanning() {
             const container = document.getElementById('appBody');
-            let htmlTodo = '', htmlBaggage = '', htmlShopping = '';
-            checklistData.forEach(item => {
-                const li = `
+            
+            // 1. 待辦事項區
+            let todoHtml = '';
+            todoData.forEach((item, index) => {
+                todoHtml += `
                     <label class="flex items-center justify-between p-2 bg-[#FAF9F6] border border-[#E6DFD1] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
                         <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleCheck(${item.id})" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
+                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleTodo(${index})" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
                     </label>
                 `;
-                if (item.type === 'todo') htmlTodo += li;
-                else if (item.type === 'baggage') htmlBaggage += li;
-                else if (item.type === 'shopping') htmlShopping += li;
             });
 
+            // 2. 高規四分類行李清單區
+            let baggageHtml = '';
+            for (const [groupName, items] of Object.entries(baggageData)) {
+                let itemsHtml = '';
+                items.forEach((item) => {
+                    itemsHtml += `
+                        <label class="flex items-center justify-between p-2 bg-white border border-[#EBE6DC] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
+                            <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
+                            <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleBaggage('${groupName}', '${item.id}')" class="w-4 h-4 rounded text-[#688B9A] focus:ring-0">
+                        </label>
+                    `;
+                });
+
+                baggageHtml += `
+                    <div class="mb-4 last:mb-0">
+                        <h4 class="text-xs font-bold text-[#557583] mb-1.5 flex items-center gap-1">
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#688B9A]"></span> ${groupName}
+                        </h4>
+                        <div class="space-y-1.5 pl-2.5">${itemsHtml}</div>
+                    </div>
+                `;
+            }
+
             container.innerHTML = `
-                <div class="diary-card p-4 bg-white space-y-4">
-                    <div><h3 class="text-xs font-bold text-[#4A7C59] mb-2">📋 行前待辦事項 (Todo)</h3><div class="space-y-1.5">${htmlTodo}</div></div>
-                    <div><h3 class="text-xs font-bold text-[#688B9A] mb-2">🎒 行李打包清單 (Baggage)</h3><div class="space-y-1.5">${htmlBaggage}</div></div>
-                    <div><h3 class="text-xs font-bold text-[#D9822B] mb-2">🛍️ 預定瘋狂購物清單 (Shopping)</h3><div class="space-y-1.5">${htmlShopping}</div></div>
+                <div class="diary-card p-4 bg-white space-y-5">
+                    <div>
+                        <h3 class="text-xs font-bold text-[#4A7C59] mb-2.5 flex items-center gap-1.5">
+                            <i class="fa-solid fa-square-check"></i> 📋 行前待辦事項
+                        </h3>
+                        <div class="space-y-1.5">${todoHtml}</div>
+                    </div>
+                    
+                    <hr class="border-dashed border-[#E6DFD1]">
+                    
+                    <div>
+                        <h3 class="text-xs font-bold text-[#688B9A] mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-suitcase-rolling"></i> 🎒 行李打包清單
+                        </h3>
+                        <div class="space-y-3">${baggageHtml}</div>
+                    </div>
                 </div>
             `;
         }
 
-        function toggleCheck(id) {
-            checklistData = checklistData.map(item => item.id === id ? { ...item, done: !item.done } : item);
-            localStorage.setItem('c_list', JSON.stringify(checklistData));
+        function toggleTodo(index) {
+            todoData[index].done = !todoData[index].done;
+            localStorage.setItem('todo_data', JSON.stringify(todoData));
             renderPlanning();
         }
 
-        // --- MODULE 5: MEMBERS (成員) ---
+        function toggleBaggage(groupName, itemId) {
+            baggageData[groupName] = baggageData[groupName].map(item => 
+                item.id === itemId ? { ...item, done: !item.done } : item
+            );
+            localStorage.setItem('baggage_groups', JSON.stringify(baggageData));
+            renderPlanning();
+        }
+
+        // --- MODULE 5: MEMBERS (成員名字乾淨呈現) ---
         function renderMembers() {
             const container = document.getElementById('appBody');
             let membersHtml = '';
