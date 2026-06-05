@@ -16,11 +16,9 @@
         body {
             font-family: 'Kosugi Maru', 'Noto Sans TC', sans-serif;
             background-color: #F7F4EB;
-            /* 日系手帳點狀減壓背景 */
             background-image: radial-gradient(#E5DFD3 1.5px, transparent 1.5px);
             background-size: 20px 20px;
         }
-        /* 手帳感經典圓角與手帳專屬軟網格陰影 */
         .diary-card {
             background: #FFFFFF;
             border: 2px solid #E6DFD1;
@@ -32,6 +30,12 @@
             color: white;
             border-radius: 16px;
             box-shadow: 3px 3px 0px #2A4D34;
+        }
+        .diary-btn-amber {
+            background-color: #D9822B;
+            color: white;
+            border-radius: 14px;
+            box-shadow: 2px 2px 0px #915114;
         }
         .hide-scrollbar::-webkit-scrollbar { display: none; }
         .hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
@@ -59,15 +63,20 @@
             </div>
         </div>
         
-        <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector">
-            </div>
+        <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector"></div>
     </header>
 
-    <main class="px-4 py-4 flex-grow" id="appBody">
-        </main>
+    <main class="px-4 py-4 flex-grow" id="appBody"></main>
 
-    <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-50 rounded-2xl p-2 flex justify-around items-center">
-        <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#688B9A] active:scale-95 transition-all">
+    <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
+        <div class="bg-white rounded-3xl w-full max-w-sm p-5 border-2 border-[#E6DFD1] shadow-2xl relative max-h-[85vh] overflow-y-auto hide-scrollbar">
+            <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-circle-xmark text-xl"></i></button>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+
+    <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-40 rounded-2xl p-2 flex justify-around items-center">
+        <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all">
             <i class="fa-solid fa-compass text-lg mb-0.5"></i>
             <span class="text-[10px] font-bold">行程</span>
         </button>
@@ -102,13 +111,10 @@
             appId: "YOUR_APP_ID"
         };
         
-        // 初始化 Firebase (若未填寫則會優雅調用本地快取模擬)
-        let db;
-        let storage;
+        let db; let storage;
         try {
             if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
                 firebase.initializeApp(firebaseConfig);
-                // 啟用本地離線持久化支援 (Offline Persistence)
                 firebase.firestore().enablePersistence().catch(err => console.log("離線模式限制:", err.code));
                 db = firebase.firestore();
                 storage = firebase.storage();
@@ -116,88 +122,88 @@
         } catch(e) { console.log("Firebase 尚未填寫，自動切換至 LocalStorage 離線運行"); }
 
         // ==========================================
-        // 2. STATE MANAGEMENT & LOCAL DATA
+        // 2. STATE MANAGEMENT & DATA
         // ==========================================
         let activeTab = 'schedule';
         let selectedDay = 1;
 
-        // 預設成員與大頭貼
+        // 成員名冊大修正: George & Charlotte
         let membersList = JSON.parse(localStorage.getItem('m_list')) || [
-            { id: 'm1', name: '男方 (車手/吸菸)', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
-            { id: 'm2', name: '女方 (總監/購物)', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
+            { id: 'm1', name: 'George (車手/吸菸)', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
+            { id: 'm2', name: 'Charlotte (總監/購物)', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
         ];
 
-        // 預設準備清單
+        // 離線景點照片庫
+        let spotPhotos = JSON.parse(localStorage.getItem('spot_photos')) || {};
+
         let checklistData = JSON.parse(localStorage.getItem('c_list')) || [
             { id: 1, type: 'todo', text: '線上申辦國際駕照與日文譯本', done: true },
-            { id: 2, type: 'baggage', text: '男方必備打火機與備用菸草', done: false },
+            { id: 2, type: 'baggage', text: 'George 必備打火機與備用菸草', done: false },
             { id: 3, type: 'shopping', text: '倉敷美觀限定紙膠帶與文具', done: false }
         ];
 
-        // 預設記帳明細
         let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [
-            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: '男方 (車手/吸菸)', split: '雙人均分' },
-            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: '女方 (總監/購物)', split: '雙人均分' },
-            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: '男方 (車手/吸菸)', split: '雙人均分' }
+            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: 'George (車手/吸菸)', split: '雙人均分' },
+            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: 'Charlotte (總監/購物)', split: '雙人均分' },
+            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: 'George (車手/吸菸)', split: '雙人均分' }
         ];
 
-        // 精準 9 天手帳行程配置
+        // 包含完整備註與地圖代碼的 9 日手帳大數據
         const mainItinerary = {
             1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
-                { time: "18:05", type: "transport", spot: "高松機場", desc: "班機降落高松機場，辦理入境手續。" },
-                { time: "19:00", type: "transport", spot: "NISSAN 租車櫃台", desc: "辦理取車，購買 9 日 SEP，檢查 March 車況。(機場門外有指定喫煙所，可先補一根)" },
-                { time: "20:10", type: "hotel", spot: "Hostel JAQ takamatsu", desc: "辦理入住。地址：香川県高松市片原町1-1" },
-                { time: "20:30", type: "food", spot: "兵庫町/片原町商店街", desc: "步行吃宵夜，強力推薦讚岐烏龍麵名店或骨付鳥。" }
+                { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://maps.google.com/?q=Takamatsu+Airport" },
+                { id: "1_2", time: "19:00", type: "transport", spot: "NISSAN 租車櫃台取車", desc: "至櫃台辦理手續，購買 9 日 SEP，檢查 March 車況。", note: "租車合約書與保險條款要收妥。機場門外設有指定喫煙所，取車前 George 可先補一根。", map: "https://maps.google.com/?q=NISSAN+Rent+A+Car+Takamatsu+Airport" },
+                { id: "1_3", time: "20:10", type: "hotel", spot: "Hostel JAQ takamatsu 入住", desc: "地址：香川県高松市片原町1-1", note: "辦理入住並放好大件行李。今日油資預估 300 日圓。", map: "https://maps.google.com/?q=Hostel+JAQ+takamatsu" },
+                { id: "1_4", time: "20:30", type: "food", spot: "兵庫町/片原町商店街", desc: "步行至高松最長的商店街享用宵夜。", note: "推薦烏龍麵名店或在地名物骨付鳥（烤帶骨雞腿）。", map: "https://maps.google.com/?q=Takamatsu+Central+Shopping+Street" }
             ]},
             2: { date: "6/14 (日)", weather: "⛅ 多雲 24°C", title: "高松城 ➔ 大步危秘境 ➔ 松山夕陽", focus: "四國三大水城之一、德島秘境遊船、傍晚拉車至愛媛。", smoking: "大步危觀光船售票處旁有極大的戶外吸菸區。松山全日空飯店館內設有舒適密閉吸菸室。", items: [
-                { time: "08:30", type: "scenic", spot: "高松城 (玉藻公園)", desc: "散步前往參觀四國三大水城之一。" },
-                { time: "11:30", type: "scenic", spot: "大步危峽觀光船", desc: "享用祖谷蕎麥麵，搭乘觀光船（航程 30 分鐘）欣賞急流壯麗奇岩。" },
-                { time: "16:30", type: "hotel", spot: "松山全日空皇冠假日飯店", desc: "辦理入住。地址：愛媛県松山市一番町3丁目2-1" },
-                { time: "17:30", type: "food", spot: "道後溫泉周邊", desc: "享用愛媛鯛魚飯，散步看少爺機關鐘，享受悠閒足湯。" }
+                { id: "2_1", time: "08:30", type: "scenic", spot: "高松城 (玉藻公園)", desc: "散步前往欣賞罕見的護城河引進海水的「水城」。", note: "可以在天守台遺跡俯瞰瀨戶內海與琴電列車掠過。", map: "https://maps.google.com/?q=Takamatsu+Castle" },
+                { id: "2_2", time: "11:30", type: "scenic", spot: "大步危峽谷觀光遊覽船", desc: "搭乘觀光船（航程 30 分鐘），沿途欣賞急流與壯麗奇岩。", note: "雙人門票 3,000 日圓。下船後順路開車經小步危拍照，中午吃祖谷蕎麥麵。", map: "https://maps.google.com/?q=Oboke+Gorge+Pleasure+Boat" },
+                { id: "2_3", time: "16:30", type: "hotel", spot: "松山全日空皇冠假日飯店", desc: "地址：愛媛県松山市一番町3丁目2-1", note: "橫跨四國拉車約 2.5 小時，走高速公路因有 SEP 免過路費。館內設有密閉吸菸室。", map: "https://maps.google.com/?q=ANA+Crowne+Plaza+Matsuyama" },
+                { id: "2_4", time: "17:30", type: "food", spot: "道後溫泉周邊散步", desc: "晚餐在大街道享用愛媛鯛魚飯，晚上看少爺機關鐘。", note: "可以在周邊泡個溫馨的足湯，感受百年名湯的氛圍。", map: "https://maps.google.com/?q=Dogo+Onsen+Main+Building" }
             ]},
             3: { date: "6/15 (一)", weather: "🌧️ 局部雨 22°C", title: "松山城 ➔ 萬翠莊 ➔ 大街道購物日", focus: "體驗松山城單人空中吊椅、大街道與銀天街強大購物行程。", smoking: "松山城山頂廣場指定位置設有吸菸區；大街道商店街內部分柏青哥店或指定居酒屋有吸菸室。", items: [
-                { time: "09:00", type: "scenic", spot: "松山城纜車站", desc: "搭乘超酷「單人無安全帶吊椅」登上天守閣，俯瞰瀨戶內海。" },
-                { time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀極具大正浪漫風情的法式洋樓。" },
-                { time: "14:00", type: "shopping", spot: "大街道與銀天街", desc: "瘋狂購物、尋找【扭蛋之森】大扭特扭，晚餐享用瀨戶內海海鮮居酒屋。" }
+                { id: "3_1", time: "09:00", type: "scenic", spot: "松山城空中吊椅", desc: "搭乘超酷的「單人無安全帶吊椅」登上松山城天守。", note: "套票雙人 2,080 日圓。可以俯瞰整個松山市區與瀨戶內海。", map: "https://maps.google.com/?q=Matsuyama+Castle+Ropeway" },
+                { id: "3_2", time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀法國文藝復興風格的浪漫洋樓。", note: "大正時期由久松定謨伯爵建造的別邸，非常適合拍照。", map: "https://maps.google.com/?q=Bansuisou" },
+                { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝聖【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://maps.google.com/?q=Matsuyama+Okaido+Shopping+Street" }
             ]},
-            4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。", smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」皆有明顯舒適的戶外喫煙所。", items: [
-                { time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "由隈研吾設計，360 度俯瞰來島海峽大橋，此生必看絕景！" },
-                { time: "11:00", type: "transport", spot: "島波海道跳島", desc: "沿途經過伯方島、大三島，中午在島上享用名產檸檬拉麵。" },
-                { time: "15:30", type: "hotel", spot: "廣島全日空皇冠假日飯店", desc: "入住休息。地址：廣島県廣島市中区中町7-20" },
-                { time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛新開幕商場，朝聖精緻日式雜貨 AKOMEYA TOKYO。" }
+            4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。", smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」都有極棒的戶外喫煙所。", items: [
+                { id: "4_1", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "大島最具代表性景點，隈研吾設計的無機調木質全景觀景台。", note: "能 360 度俯瞰壯觀的來島海峽大橋，美到令人摒息。", map: "https://maps.google.com/?q=Kirosan+Observatory+Park" },
+                { id: "4_2", time: "11:00", type: "transport", spot: "島波海道自駕跳島", desc: "一路開車跨越伯方島、大三島、生口島，中午在島上吃檸檬拉麵。", note: "跨海橋樑費 SEP 已全包，中途需加油預估 2,000 日圓。", map: "https://maps.google.com/?q=Shimanami+Kaido" },
+                { id: "4_3", type: "hotel", spot: "廣島全日空皇冠假日飯店", desc: "地址：廣島県廣島市中区中町7-20", note: "下海道後走山陽道拉車約 1.5 小時至廣島市區辦理入住。", map: "https://maps.google.com/?q=ANA+Crowne+Plaza+Hiroshima" },
+                { id: "4_4", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛街，朝聖新開幕商場的【AKOMEYA TOKYO】精緻生活雜貨。", note: "Charlotte 的重點大店！晚餐順便尋找廣島在地小吃。", map: "https://maps.google.com/?q=Hiroshima+Hondori+Shopping+Street" }
             ]},
-            5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島城 ➔ 原爆圓頂 ➔ 宮島海上鳥居", focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "宮島全島嚴格禁菸，但在「宮島棧橋出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
-                { time: "09:00", type: "scenic", spot: "平和紀念公園", desc: "步行參觀原子彈爆炸圓頂屋與廣島城。" },
-                { time: "12:15", type: "transport", spot: "宮島口渡輪", desc: "搭乘 JR 西日本渡輪前往宮島，表參道享受烤牡蠣、紅葉饅頭。" },
-                { time: "15:00", type: "scenic", spot: "嚴島神社", desc: "下午適逢預估滿潮，完美目睹紅色大鳥居矗立在海中的神聖畫面。" },
-                { time: "19:00", type: "food", spot: "廣島燒名店 鐵太", desc: "回市區晚餐，觀看師傅在鐵板上層層堆疊高麗菜與炒麵的精湛手藝。" }
+            5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島城 ➔ 原爆圓頂 ➔ 宮島嚴島神社", focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "宮島全島嚴格禁菸，但在「宮島棧橋出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
+                { id: "5_1", time: "09:00", type: "scenic", spot: "原子彈爆炸圓頂屋 & 廣島城", desc: "漫步平和紀念公園，見證歷史傷痕與重生歷史。", note: "廣島城又稱鯉城，非常雄偉好拍。", map: "https://maps.google.com/?q=Atomic+Bomb+Dome" },
+                { id: "5_2", time: "12:15", type: "transport", spot: "搭乘 JR 宮島渡輪", desc: "開車至宮島口停放（停車費 1,000 日圓），搭船前往宮島。", note: "渡輪費雙人來回與宮島訪問稅約 600 日圓。", map: "https://maps.google.com/?q=Miyajimaguchi+Ferry+Terminal" },
+                { id: "5_3", time: "13:00", type: "scenic", spot: "嚴島神社海上大鳥居", desc: "完美目睹大鳥居完全矗立在蔚藍海水中的神聖滿潮絕景。", note: "在表參道吃現烤肥美大牡蠣與紅葉饅頭。", map: "https://maps.google.com/?q=Itsukushima+Shrine" },
+                { id: "5_4", time: "19:00", type: "food", spot: "廣島燒名店【鐵太】或【電光石火】", desc: "回廣島市區，安排正宗大份量廣島燒晚餐。", note: "看著師傅在面前的大鐵板上層層堆疊高麗菜、五花肉與炒麵，視覺味覺雙重享受。", map: "https://maps.google.com/?q=Chinchikurin+Hiroshima" }
             ]},
-            6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城（貓之細道）➔ 鞆之浦", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型的港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，部分開闊停車場設有集菸桶。", items: [
-                { time: "10:00", type: "scenic", spot: "千光寺公園 / 貓之細道", desc: "搭纜車俯瞰尾道水道，漫步石階下山尋找貓咪，午餐享用經典尾道拉麵。" },
-                { time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪建在斷崖絕壁上的朱紅色觀音廟，景色驚險絕美。" },
-                { time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步，享受靜謐小鎮之夜。" }
+            6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城 ➔ 宿：鞆之浦海景", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，但部分的開闊停車場設有集菸桶。", items: [
+                { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳下記得來一碗經典的背脂「尾道拉麵」當午餐。", map: "https://maps.google.com/?q=Senkoji+Park" },
+                { id: "6_2", time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪奇蹟般建在斷崖絕壁上的朱紅色觀音寺廟。", note: "雙人門票 400 日圓，海水擊打礁石的畫面極度震撼。", map: "https://maps.google.com/?q=Abuto+Kannon" },
+                { id: "6_3", time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 包棟老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步。", note: "這裏是宮崎駿「崖上的波妞」靈感發源地，極具江戶港町風情，晚餐吃鯛魚料理。", map: "https://maps.google.com/?q=Tomonoura+Joyato+Lighthouse" }
             ]},
-            7: { date: "6/19 (五)", weather: "☀️ 晴 26°C", title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物", focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購。", smoking: "美觀地區中央公廁旁有吸菸區。APA飯店內設有專用吸菸室，岡山車站西口與 AEON MALL 內亦有吸菸室。", items: [
-                { time: "09:00", type: "scenic", spot: "福禪寺 對潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。" },
-                { time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "中午吃名物 Kappa 炸豬排。下午沿著倉敷川散步，逛紙膠帶雜貨小店。" },
-                { time: "16:30", type: "hotel", spot: "APA飯店 岡山站前", desc: "【更新住宿】辦理入住並停妥車輛。地址：岡山市北区下石井1-3-12" },
-                { time: "17:00", type: "shopping", spot: "AEON MALL 岡山", desc: "開啟瘋狂購物模式！晚餐在商場內享用岡山備前黑牛燒肉或千屋牛。" }
+            7: { date: "6/19 (五)", weather: "☀️ 晴 26°C", title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物", focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購。", smoking: "倉敷美觀地區中央公廁旁、以及大型收費停車場周邊有指定吸菸區。APA飯店內有專用吸菸室。", items: [
+                { id: "7_1", time: "09:00", type: "scenic", spot: "福禪寺 對潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。", note: "雙人門票 400 日圓，窗框望出去就像一幅精緻的浮世繪山水畫。", map: "https://maps.google.com/?q=Fukuzenji+Taichorou" },
+                { id: "7_2", time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "漫遊水鄉。中午吃名物 Kappa 炸豬排。下午沿著倉敷川散步。", note: "有非常多充滿設計感的文具與紙膠帶小店，Charlotte 保證淪陷。", map: "https://maps.google.com/?q=Kurashiki+Bikan+Historical+Quarter" },
+                { id: "7_3", time: "16:30", type: "hotel", spot: "APA飯店 岡山站前", desc: "【更新住宿】辦理入住並停妥車。地址：岡山県岡山市北区下石井1丁目3-12", note: "飯店停車費約 1,500 日圓。下車立刻連通地下街。", map: "https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae" },
+                { id: "7_4", time: "17:00", type: "shopping", spot: "AEON MALL 岡山大採購", desc: "步行前往與車站相連的超級巨大 AEON，開啟瘋狂採購模式！", note: "晚餐在商場內安排享用高級岡山備前黑牛燒肉或千屋牛。", map: "https://maps.google.com/?q=AEON+MALL+Okayama" }
             ]},
-            8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於時尚精品汽車旅館型態，普遍提供非常友善的客房吸菸空間。", items: [
-                { time: "09:00", type: "scenic", spot: "岡山後樂園 / 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。" },
-                { time: "12:40", type: "transport", spot: "瀨戶大橋自駕", desc: "【全新行程】自駕跨海返回四國，中途停靠【與島 PA】在海中央拍大橋全景。" },
-                { time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "前往四國水族館或高松唐吉訶德進行最後伴手禮大採購。" },
-                { time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "【全新入住】辦理入住休息。晚上開車前往享用香川名產「骨付鳥」烤雞腿。" }
+            8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於汽車旅館型態，客房寬敞且皆提供非常友善的吸菸環境。", items: [
+                { id: "8_1", time: "09:00", type: "scenic", spot: "岡山後樂園 & 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。", note: "共通券雙人 1,280 日圓。可以過橋一起悠閒散步。", map: "https://maps.google.com/?q=Okayama+Korakuen" },
+                { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "【全新行程】開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://maps.google.com/?q=Yoshima+Parking+Area" },
+                { id: "8_3", time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "若想看海景海豚表演可去四國水族館；若購物則主攻高松唐吉訶德伴手禮最後大採購。", note: "今天開車油資預估約 1,200 日圓。", map: "https://maps.google.com/?q=youme+Town+Takamatsu" },
+                { id: "8_4", time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "【全新入住】地址：香川県高松市東山崎町224-1", note: "辦理入住稍作休息。晚上開車前往高松市區享用來香川必吃的「骨付鳥」慶功宴。", map: "https://maps.google.com/?q=Hotel+Vega+Takamatsu" }
             ]},
             9: { date: "6/21 (日)", weather: "☀️ 晴 28°C", title: "金刀比羅宮 ➔ 天空鳥居 ➔ 還車歸國", focus: "挑戰 785 階一生必去神宮、極致天空之鳥居、還車完美歸國。", smoking: "金刀比羅宮參道沿途有多間商店設有吸菸點；高松機場入關前二樓及出關免稅店旁皆設有乾淨室內吸菸室。", items: [
-                { time: "09:20", type: "scenic", spot: "金刀比羅宮", desc: "【全新優化】從織女星出發只需 50 分鐘！挑戰 785 階參拜海上守護神。" },
-                { time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝聖山頂本宮，從巨大鳥居俯瞰觀音寺市區與瀨戶內海絕美沙灘。" },
-                { time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場營業所結算 SEP 完好交車，搭乘接駁車至櫃台辦理登機。" },
-                { time: "19:05", type: "transport", spot: "華航 CI179 班機", desc: "起飛返回台北，結束完美的 9 天山陽四國絕景購物之旅！" }
+                { id: "9_1", time: "09:20", type: "scenic", spot: "金刀比羅宮挑戰", desc: "【全新優化】從織女星飯店開車只需 50 分鐘！步行登上 785 階到達本宮。", note: "參拜海上守護神，下山後在參道吃一碗現切讚岐烏龍麵當午餐。", map: "https://maps.google.com/?q=Kotohira-gu" },
+                { id: "9_2", time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝聖位於觀音寺市山頂的本宮。", note: "從巨大的石造鳥居向下俯瞰，市區與瀨戶內海的圓弧沙灘猶如人間仙境。", map: "https://maps.google.com/?q=Takaya+Shrine" },
+                { id: "9_3", time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場旁的營業所加滿油完好還車。加滿油資約 3,500 日圓。", note: "還車後搭乘接駁車抵達航廈，辦理華航登機手續，在免稅店做最後補貨。", map: "https://maps.google.com/?q=NISSAN+Rent+A+Car+Takamatsu+Airport" },
+                { id: "9_4", time: "19:05", type: "transport", spot: "中華航空 CI179 班機", desc: "起飛返回台北，結東九天山陽四國的甜蜜手帳自駕回憶！", note: "高松機場入關前後皆有非常乾淨的室內吸菸室，登機前 George 可以舒適巡禮。", map: "https://maps.google.com/?q=Takamatsu+Airport" }
             ]}
         };
 
-        // 類別標籤與色調對應
         const categoryMeta = {
             scenic: { label: '景點', bg: 'bg-[#EAF2F4]', text: 'text-[#4A7C59]', dot: 'bg-[#4A7C59]' },
             food: { label: '美食', bg: 'bg-[#FDF3E7]', text: 'text-[#D9822B]', dot: 'bg-[#D9822B]' },
@@ -227,10 +233,8 @@
                     : 'bg-white/80 border-[#E6DFD1] text-gray-600'
                 }`;
                 card.onclick = () => {
-                    selectedDay = i;
-                    activeTab = 'schedule';
-                    renderDateSelector();
-                    renderSchedule();
+                    selectedDay = i; activeTab = 'schedule';
+                    renderDateSelector(); renderSchedule();
                 };
                 card.innerHTML = `
                     <span class="text-[10px] uppercase tracking-tighter opacity-80">Day ${i}</span>
@@ -245,13 +249,11 @@
             const tabs = ['schedule', 'bookings', 'expense', 'planning', 'members'];
             tabs.forEach(t => {
                 const navBtn = document.getElementById(`nav-${t}`);
-                if (t === tabName) {
-                    navBtn.className = "flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all";
-                } else {
-                    navBtn.className = "flex flex-col items-center text-gray-400 active:scale-95 transition-all";
-                }
+                navBtn.className = t === tabName 
+                    ? "flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all"
+                    : "flex flex-col items-center text-gray-400 active:scale-95 transition-all";
             });
-            renderDateSelector(); // 更新頂部膠囊狀態
+            renderDateSelector();
             
             if (tabName === 'schedule') renderSchedule();
             else if (tabName === 'bookings') renderBookings();
@@ -260,7 +262,7 @@
             else if (tabName === 'members') renderMembers();
         }
 
-        // --- MODULE 1: SCHEDULE (行程) ---
+        // --- MODULE 1: SCHEDULE & MODAL DETAILS ---
         function renderSchedule() {
             const data = mainItinerary[selectedDay];
             const container = document.getElementById('appBody');
@@ -268,18 +270,19 @@
             let timelineHtml = '';
             data.items.forEach(item => {
                 const meta = categoryMeta[item.type];
+                const hasPhoto = spotPhotos[item.id] ? '📸 ' : '';
                 timelineHtml += `
-                    <div class="flex gap-4 relative pb-6 last:pb-0">
+                    <div onclick="openDetailModal('${item.id}', ${selectedDay})" class="flex gap-4 relative pb-6 last:pb-0 cursor-pointer group">
                         <div class="w-10 flex-shrink-0 flex flex-col items-center">
-                            <span class="text-xs font-mono font-bold text-[#688B9A]">${item.time}</span>
-                            <div class="w-2.5 h-2.5 rounded-full ${meta.dot} mt-2 shadow-sm z-10"></div>
+                            <span class="text-xs font-mono font-bold text-[#688B9A]">${item.time || '--:--'}</span>
+                            <div class="w-2.5 h-2.5 rounded-full ${meta.dot} mt-2 shadow-sm z-10 group-hover:scale-125 transition-all"></div>
                         </div>
-                        <div class="flex-grow bg-white border-2 border-[#E6DFD1] rounded-2xl p-3 shadow-sm hover:shadow-md transition-all">
+                        <div class="flex-grow bg-white border-2 border-[#E6DFD1] rounded-2xl p-3 shadow-sm hover:shadow-md transition-all active:scale-98">
                             <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-xs font-bold text-gray-900">${item.spot}</span>
+                                <span class="text-xs font-bold text-gray-900">${hasPhoto}${item.spot}</span>
                                 <span class="${meta.bg} ${meta.text} text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5">${meta.label}</span>
                             </div>
-                            <p class="text-[11px] text-gray-600 leading-relaxed">${item.desc}</p>
+                            <p class="text-[11px] text-gray-500 line-clamp-1">${item.desc}</p>
                         </div>
                     </div>
                 `;
@@ -295,83 +298,139 @@
                         📌 <span class="font-bold">今日焦點：</span>${data.focus}
                     </p>
                 </div>
-
                 <div class="diary-card p-4 mb-4 bg-white relative timeline-line">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-clock-rotate-left mr-1"></i>時間移動軌跡</h3>
+                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-hand-pointer mr-1.5 text-blue-500 animate-pulse"></i>點擊行程查看備註與拍下照片</h3>
                     <div class="space-y-1">${timelineHtml}</div>
                 </div>
-
                 <div class="bg-[#FCF9F2] border-2 border-dashed border-[#D1C7BD] rounded-2xl p-3.5 shadow-sm">
-                    <h4 class="text-xs font-bold text-[#A67C52] mb-1 flex items-center gap-1.5">
-                        <i class="fa-solid fa-smoking text-amber-700 text-xs"></i> 💡 隨行吸菸環境記事 (男方必備)
-                    </h4>
+                    <h4 class="text-xs font-bold text-[#A67C52] mb-1 flex items-center gap-1.5"><i class="fa-solid fa-smoking text-amber-700 text-xs"></i> 💡 隨行吸菸環境精選</h4>
                     <p class="text-[11px] text-[#8C6D4F] leading-relaxed">${data.smoking}</p>
                 </div>
             `;
         }
 
-        // --- MODULE 2: BOOKINGS (預訂) ---
+        function openDetailModal(itemId, dayNum) {
+            const item = mainItinerary[dayNum].items.find(i => i.id === itemId);
+            if (!item) return;
+            
+            const meta = categoryMeta[item.type];
+            const photoSrc = spotPhotos[itemId] || '';
+            const photoHtml = photoSrc 
+                ? `<img src="${photoSrc}" class="w-full h-36 object-cover rounded-xl border-2 border-[#E6DFD1] mt-3 shadow-inner">` 
+                : `<div class="border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl p-4 mt-3 text-center text-gray-400 text-xs">📸 本地手帳此景點尚無照片</div>`;
+
+            document.getElementById('modalContent').innerHTML = `
+                <div class="flex items-center gap-2 mb-2">
+                    <span class="${meta.bg} ${meta.text} text-xs font-bold px-2.5 py-0.5 rounded-full border border-black/5">${meta.label}</span>
+                    <span class="text-xs font-mono font-bold text-gray-400">${item.time || ''}</span>
+                </div>
+                <h3 class="text-base font-bold text-gray-950 mb-2">${item.spot}</h3>
+                <p class="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100 leading-relaxed">${item.desc}</p>
+                
+                <div class="mt-3 bg-[#FAF7F0] border border-[#E6DFD1] p-3 rounded-xl">
+                    <p class="text-[11px] text-[#8C6D4F] leading-relaxed"><span class="font-bold text-[#A67C52]"><i class="fa-solid fa-pencil mr-1"></i>備註小貼紙：</span>${item.note || '無詳細備註'}</p>
+                </div>
+
+                ${photoHtml}
+
+                <div class="grid grid-cols-2 gap-2 mt-4">
+                    <a href="${item.map || '#'}" target="_blank" class="diary-btn-amber text-center py-2 text-xs font-bold block active:scale-95 transition-all"><i class="fa-solid fa-map-pin mr-1"></i>地圖導航</a>
+                    <label class="diary-btn-blue text-center py-2 text-xs font-bold block cursor-pointer active:scale-95 transition-all">
+                        <i class="fa-solid fa-camera mr-1"></i>上傳手帳照
+                        <input type="file" accept="image/*" class="hidden" onchange="compressAndSaveSpotPhoto(event, '${itemId}')">
+                    </label>
+                </div>
+            `;
+            document.getElementById('detailModal').classList.remove('hidden');
+        }
+
+        function closeDetailModal() {
+            document.getElementById('detailModal').classList.add('hidden');
+        }
+
+        function compressAndSaveSpotPhoto(event, itemId) {
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader(); reader.readAsDataURL(file);
+            reader.onload = function (e) {
+                const img = new Image(); img.src = e.target.result;
+                img.onload = function () {
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const maxW = 400; const scale = maxW / img.width;
+                    canvas.width = maxW; canvas.height = img.height * scale;
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    
+                    spotPhotos[itemId] = compressedUrl;
+                    localStorage.setItem('spot_photos', JSON.stringify(spotPhotos));
+                    
+                    if (storage) {
+                        storage.ref(`spots/${itemId}.jpg`).putString(compressedUrl, 'data_url').then(() => console.log('Firebase 雲端相簿已同步'));
+                    }
+                    closeDetailModal(); renderSchedule();
+                };
+            };
+        }
+
+        // --- MODULE 2: BOOKINGS (機票去回程 & 住宿台幣分攤大補貼) ---
         function renderBookings() {
             const container = document.getElementById('appBody');
             container.innerHTML = `
                 <div class="diary-card overflow-hidden bg-white mb-4 relative">
-                    <div class="bg-[#688B9A] text-white px-4 py-2 text-xs font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
-                        <span>✈️ BOARDING PASS / 華航回程</span>
+                    <div class="bg-[#4A7C59] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
+                        <span>✈️ OUTBOUND PASS / 華航去程</span>
+                        <span class="font-mono">CI178</span>
+                    </div>
+                    <div class="p-3.5 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
+                        <div><p class="text-lg font-bold font-mono text-gray-800">TPE</p><p class="text-[9px] text-gray-400">桃園台北</p></div>
+                        <div class="flex flex-col items-center justify-center">
+                            <p class="text-[9px] font-mono text-[#4A7C59] font-bold">2026.06.13</p>
+                            <div class="w-full h-[1.5px] bg-gray-200 relative my-0.5"><i class="fa-solid fa-plane text-[10px] text-[#4A7C59] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i></div>
+                            <p class="text-[9px] text-gray-400">14:15 起飛</p>
+                        </div>
+                        <div><p class="text-lg font-bold font-mono text-gray-800">TAK</p><p class="text-[9px] text-gray-400">高松機場</p></div>
+                    </div>
+                </div>
+
+                <div class="diary-card overflow-hidden bg-white mb-4 relative">
+                    <div class="bg-[#688B9A] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
+                        <span>✈️ INBOUND PASS / 華航回程</span>
                         <span class="font-mono">CI179</span>
                     </div>
-                    <div class="p-4 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TAK</p>
-                            <p class="text-[10px] text-gray-400">高松機場</p>
-                        </div>
+                    <div class="p-3.5 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
+                        <div><p class="text-lg font-bold font-mono text-gray-800">TAK</p><p class="text-[9px] text-gray-400">高松機場</p></div>
                         <div class="flex flex-col items-center justify-center">
-                            <p class="text-[10px] font-mono text-[#688B9A] font-bold">2026.06.21</p>
-                            <div class="w-full h-[2px] bg-gray-200 relative my-1">
-                                <i class="fa-solid fa-plane text-xs text-[#688B9A] absolute -top-1.5 left-1/2 -translate-x-1/2 bg-white px-1"></i>
-                            </div>
+                            <p class="text-[9px] font-mono text-[#688B9A] font-bold">2026.06.21</p>
+                            <div class="w-full h-[1.5px] bg-gray-200 relative my-0.5"><i class="fa-solid fa-plane text-[10px] text-[#688B9A] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i></div>
                             <p class="text-[9px] text-gray-400">19:05 起飛</p>
                         </div>
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TPE</p>
-                            <p class="text-[10px] text-gray-400">桃園台北</p>
-                        </div>
-                    </div>
-                    <div class="bg-[#F4F1EA] px-4 py-2 border-t border-[#E6DFD1] text-[10px] flex justify-between text-gray-500 font-mono">
-                        <span>PNR: CI-TAK88921</span>
-                        <span class="text-gray-700 font-bold">已在線報到</span>
+                        <div><p class="text-lg font-bold font-mono text-gray-800">TPE</p><p class="text-[9px] text-gray-400">桃園台北</p></div>
                     </div>
                 </div>
 
-                <div class="diary-card p-4 bg-white mb-4 space-y-4">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>下榻旅宿與分攤費用</h3>
+                <div class="diary-card p-4 bg-white mb-4 space-y-3">
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>精確房間預訂與台幣分攤金額</h3>
                     
-                    <div class="text-xs space-y-3">
-                        <div class="p-2.5 bg-[#F9F8F5] border border-[#E6DFD1] rounded-xl">
-                            <div class="flex justify-between font-bold text-gray-800 mb-1">
-                                <span>🏨 D7: APA飯店 岡山站前</span>
-                                <span class="text-[#4A7C59]">¥9,800/晚</span>
-                            </div>
-                            <p class="text-[10px] text-gray-400">地址：岡山県岡山市北区下石井1丁目3-12</p>
-                            <p class="text-[10px] text-indigo-600 font-medium mt-1">💰 每人分攤：¥4,900 (~台幣 965 元)</p>
+                    <div class="text-xs space-y-2.5">
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/13-14 Hostel JAQ takamatsu</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,403 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,202 元</p>
                         </div>
-
-                        <div class="p-2.5 bg-[#F9F8F5] border border-[#E6DFD1] rounded-xl">
-                            <div class="flex justify-between font-bold text-gray-800 mb-1">
-                                <span>🏨 D8: 高松織女星精品飯店</span>
-                                <span class="text-[#4A7C59]">¥12,000/晚</span>
-                            </div>
-                            <p class="text-[10px] text-gray-400">地址：香川県高松市東山崎町224-1 (免費雙人車庫)</p>
-                            <p class="text-[10px] text-indigo-600 font-medium mt-1">💰 每人分攤：¥6,000 (~台幣 1,180 元)</p>
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/14-16 松山全日空皇冠假日飯店</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 2 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,450 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,225 元</p>
                         </div>
-                    </div>
-                </div>
-
-                <div class="diary-card p-4 bg-white">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-car mr-1"></i>自駕租車車況明細</h3>
-                    <div class="mt-2 text-xs space-y-1 text-gray-700">
-                        <p><span class="font-bold text-gray-900">🚙 租車公司：</span>NISSAN Rent-A-Car 高松機場店</p>
-                        <p><span class="font-bold text-gray-900">⏱️ 取還時間：</span>6/13 19:00 取 ➔ 6/21 16:00 還</p>
-                        <p><span class="font-bold text-gray-900">🎟️ 附加通行証：</span>內含山陰四國 9 日 SEP 全配免過路費</p>
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/16-18 廣島全日空皇冠假日飯店</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 2 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 3,894 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,947 元</p>
+                        </div>
+                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
+                            <p class="font-bold text-gray-900">🏨 6/18-19 鞆の浦 Airbnb 包棟</p>
+                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 1,190 元</span></div>
+                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 595 元</p>
+                        </div>
                     </div>
                 </div>
             `;
@@ -389,7 +448,7 @@
                     <div class="flex justify-between items-center bg-[#FDFDFD] p-3 rounded-xl border border-[#E6DFD1]">
                         <div>
                             <p class="text-xs font-bold text-gray-800">${item.text}</p>
-                            <p class="text-[10px] text-gray-400">付款：${item.payer} | ${item.split}</p>
+                            <p class="text-[10px] text-gray-400">付款：${item.payer}</p>
                         </div>
                         <div class="flex items-center gap-3">
                             <span class="font-mono text-xs font-bold text-gray-900">¥${item.amountJpy.toLocaleString()}</span>
@@ -404,15 +463,14 @@
                     <p class="text-[10px] text-blue-100 tracking-wider font-bold">📊 日誌累計總支出明細</p>
                     <h2 class="text-2xl font-mono font-black text-amber-300 mt-1">¥ ${totalJpy.toLocaleString()} <span class="text-xs font-normal text-white">JPY</span></h2>
                     <div class="border-t border-white/20 mt-2 pt-2 flex justify-between text-xs text-blue-50">
-                        <span>預估換算台幣金額</span>
-                        <span class="font-bold font-mono">~ NT$ ${totalTwd.toLocaleString()} 元</span>
+                        <span>預估換算台幣金額</span><span class="font-bold font-mono">~ NT$ ${totalTwd.toLocaleString()} 元</span>
                     </div>
                 </div>
 
                 <div class="diary-card p-4 bg-white mb-4">
                     <h3 class="text-xs font-bold text-gray-400 mb-3">🖊️ 紀錄一筆花費吧</h3>
                     <div class="space-y-2 text-xs">
-                        <input type="text" id="expText" placeholder="支出項目 (如：買藥妝、吃拉麵)" class="w-full border border-[#E6DFD1] rounded-xl px-3 py-2 focus:outline-none">
+                        <input type="text" id="expText" placeholder="支出項目 (如：吃拉麵)" class="w-full border border-[#E6DFD1] rounded-xl px-3 py-2 focus:outline-none">
                         <div class="flex gap-2">
                             <input type="number" inputmode="numeric" id="expJpy" placeholder="日幣金額 (¥)" class="w-1/2 border border-[#E6DFD1] rounded-xl px-3 py-2 font-mono text-center focus:outline-none">
                             <select id="expPayer" class="w-1/2 border border-[#E6DFD1] rounded-xl px-2 py-2 bg-white focus:outline-none">
@@ -425,9 +483,7 @@
 
                 <div class="space-y-2">
                     <h3 class="text-xs font-bold text-gray-400 px-1">📋 支出歷史明細紙條</h3>
-                    <div class="space-y-2 max-h-[25vh] overflow-y-auto hide-scrollbar">
-                        ${listHtml || '<p class="text-center text-xs text-gray-400 py-4">目前尚無手帳記帳紀錄</p>'}
-                    </div>
+                    <div class="space-y-2 max-h-[25vh] overflow-y-auto hide-scrollbar">${listHtml || '<p class="text-center text-xs text-gray-400 py-4">目前尚無手帳記帳紀錄</p>'}</div>
                 </div>
             `;
         }
@@ -441,12 +497,7 @@
             const newExp = { id: 'ex_' + Date.now(), text, amountJpy, payer, split: '雙人均分' };
             expenseLedger.push(newExp);
             localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-
-            // Firebase 即時數據備份同步 (若有設定)
-            if (db) {
-                db.collection("expenses").doc(newExp.id).set(newExp).catch(e => console.log("快取儲存中，等候在線同步"));
-            }
-
+            if (db) db.collection("expenses").doc(newExp.id).set(newExp).catch(() => {});
             renderExpense();
         }
 
@@ -454,23 +505,19 @@
             const item = expenseLedger[index];
             expenseLedger.splice(index, 1);
             localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-            
-            if (db && item.id) {
-                db.collection("expenses").doc(item.id).delete().catch(e => console.log("快取刪除中"));
-            }
+            if (db && item.id) db.collection("expenses").doc(item.id).delete().catch(() => {});
             renderExpense();
         }
 
         // --- MODULE 4: PLANNING (準備) ---
         function renderPlanning() {
             const container = document.getElementById('appBody');
-            
             let htmlTodo = '', htmlBaggage = '', htmlShopping = '';
             checklistData.forEach(item => {
                 const li = `
                     <label class="flex items-center justify-between p-2 bg-[#FAF9F6] border border-[#E6DFD1] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
                         <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleCheck(${item.id})" class="w-4 h-4 rounded border-gray-300 text-[#4A7C59] focus:ring-0">
+                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleCheck(${item.id})" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
                     </label>
                 `;
                 if (item.type === 'todo') htmlTodo += li;
@@ -480,18 +527,9 @@
 
             container.innerHTML = `
                 <div class="diary-card p-4 bg-white space-y-4">
-                    <div>
-                        <h3 class="text-xs font-bold text-[#4A7C59] mb-2"><i class="fa-solid fa-list-check mr-1"></i>行前待辦事項 (Todo)</h3>
-                        <div class="space-y-1.5">${htmlTodo || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-[#688B9A] mb-2"><i class="fa-solid fa-suitcase mr-1"></i>行李打包清單 (Baggage)</h3>
-                        <div class="space-y-1.5">${htmlBaggage || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
-                    </div>
-                    <div>
-                        <h3 class="text-xs font-bold text-[#D9822B] mb-2"><i class="fa-solid fa-basket-shopping mr-1"></i>預定瘋狂購物清單 (Shopping)</h3>
-                        <div class="space-y-1.5">${htmlShopping || '<p class="text-[11px] text-gray-400">暫無項目</p>'}</div>
-                    </div>
+                    <div><h3 class="text-xs font-bold text-[#4A7C59] mb-2">📋 行前待辦事項 (Todo)</h3><div class="space-y-1.5">${htmlTodo}</div></div>
+                    <div><h3 class="text-xs font-bold text-[#688B9A] mb-2">🎒 行李打包清單 (Baggage)</h3><div class="space-y-1.5">${htmlBaggage}</div></div>
+                    <div><h3 class="text-xs font-bold text-[#D9822B] mb-2">🛍️ 預定瘋狂購物清單 (Shopping)</h3><div class="space-y-1.5">${htmlShopping}</div></div>
                 </div>
             `;
         }
@@ -510,66 +548,46 @@
                 membersHtml += `
                     <div class="flex items-center justify-between bg-[#FDFDFD] p-3 rounded-xl border-2 border-[#E6DFD1]">
                         <div class="flex items-center gap-3">
-                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-10 h-10 rounded-full object-cover border-2 border-[#688B9A] shadow-inner">
+                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-11 h-11 rounded-full object-cover border-2 border-[#688B9A] shadow-inner">
                             <div>
                                 <p class="text-xs font-bold text-gray-800">${m.name}</p>
-                                <p class="text-[9px] text-gray-400 font-mono">ID: USER_0${idx+1}</p>
+                                <p class="text-[9px] text-gray-400 font-mono">SWEET_COUPLE_0${idx+1}</p>
                             </div>
                         </div>
                         <label class="diary-btn-blue text-[10px] px-3 py-1 font-bold shadow-sm cursor-pointer active:scale-95 transition-all">
-                            換頭像 <input type="file" accept="image/*" class="hidden" onchange="compressAndUploadAvatar(event, ${idx})">
+                            更新大頭貼 <input type="file" accept="image/*" class="hidden" onchange="compressAndUploadAvatar(event, ${idx})">
                         </label>
                     </div>
                 `;
             });
-
             container.innerHTML = `
                 <div class="diary-card p-4 bg-white space-y-4">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-users-rectangle mr-1"></i>手帳旅伴名冊</h3>
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5">💕 情侶甜蜜手帳成員名冊</h3>
                     <div class="space-y-3">${membersHtml}</div>
                 </div>
             `;
         }
 
-        // 前端進行圖片壓縮與 Firebase Storage 上傳處理
         function compressAndUploadAvatar(event, idx) {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            const reader = new FileReader();
-            reader.readAsDataURL(file);
+            const file = event.target.files[0]; if (!file) return;
+            const reader = new FileReader(); reader.readAsDataURL(file);
             reader.onload = function (e) {
-                const img = new Image();
-                img.src = e.target.result;
+                const img = new Image(); img.src = e.target.result;
                 img.onload = function () {
-                    // Canvas 高端像素前端壓縮
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    const maxW = 150;
-                    const scale = maxW / img.width;
-                    canvas.width = maxW;
-                    canvas.height = img.height * scale;
-                    
+                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
+                    const maxW = 120; const scale = maxW / img.width;
+                    canvas.width = maxW; canvas.height = img.height * scale;
                     ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.7);
+                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
                     
-                    // 更新網頁視圖快取
-                    membersList[idx].avatar = compressedDataUrl;
+                    membersList[idx].avatar = compressedUrl;
                     localStorage.setItem('m_list', JSON.stringify(membersList));
-                    document.getElementById(`avatar-img-${idx}`).src = compressedDataUrl;
-
-                    // 若 Firebase 開通則上傳至 Storage
-                    if (storage) {
-                        const storageRef = storage.ref(`avatars/user_${idx}.jpg`);
-                        storageRef.putString(compressedDataUrl, 'data_url').then(snapshot => {
-                            console.log('Firebase Storage 上傳成功！');
-                        });
-                    }
+                    document.getElementById(`avatar-img-${idx}`).src = compressedUrl;
+                    if (storage) storage.ref(`avatars/user_${idx}.jpg`).putString(compressedUrl, 'data_url');
                 };
             };
         }
 
-        // 啟動全網頁手帳系統
         initApp();
     </script>
 </body>
