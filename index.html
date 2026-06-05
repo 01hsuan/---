@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>四國山陽自駕浪漫之旅</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary-color: #1e3d59;
+            --secondary-color: #17b978;
+            --accent-color: #ff6f3c;
+            --bg-color: #f5f7fa;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --text-light: #666666;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding-bottom: 70px;
+        }
+
+        /* Header Styling */
+        .app-header {
+            background: linear-gradient(135deg, var(--primary-color), #17b978);
+            color: white;
+            padding: 20px 15px;
+            text-align: center;
+            border-bottom-left-radius: 20px;
+            border-bottom-right-radius: 20px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+        }
+
+        .app-header h1 {
+            font-size: 1.4rem;
+            margin-bottom: 5px;
+            letter-spacing: 1px;
+        }
+
+        .app-header p {
+            font-size: 0.85rem;
+            opacity: 0.9;
+        }
+
+        /* Container & Tabs */
+        .container {
+            padding: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Day Selector Carousel */
+        .day-selector {
+            display: flex;
+            overflow-x: auto;
+            padding: 10px 0;
+            margin-bottom: 15px;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .day-selector::-webkit-scrollbar {
+            display: none;
+        }
+
+        .day-btn {
+            flex: 0 0 auto;
+            padding: 8px 16px;
+            margin-right: 8px;
+            background-color: var(--card-bg);
+            border: 1px solid #e0e0e0;
+            border-radius: 20px;
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .day-btn.active {
+            background-color: var(--primary-color);
+            color: white;
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 6px rgba(30,61,89,0.3);
+        }
+
+        /* Cards */
+        .card {
+            background-color: var(--card-bg);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .card-title {
+            font-size: 1.1rem;
+            color: var(--primary-color);
+            margin-bottom: 12px;
+            border-left: 4px solid var(--secondary-color);
+            padding-left: 8px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        /* Timeline Styling */
+        .timeline {
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .timeline::before {
+            content: '';
+            position: absolute;
+            left: 4px;
+            top: 5px;
+            bottom: 5px;
+            width: 2px;
+            background-color: #e0e0e0;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -20px;
+            top: 6px;
+            width: 10px;
+            height: 10px;
+            background-color: var(--secondary-color);
+            border-radius: 50%;
+            border: 2px solid var(--card-bg);
+            box-shadow: 0 0 0 2px var(--secondary-color);
+        }
+
+        .timeline-time {
+            font-size: 0.85rem;
+            font-weight: bold;
+            color: var(--secondary-color);
+            margin-bottom: 2px;
+        }
+
+        .timeline-title {
+            font-size: 1rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .timeline-desc {
+            font-size: 0.85rem;
+            color: var(--text-light);
+            margin-top: 4px;
+        }
+
+        /* Buttons */
+        .map-btn {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            background-color: #4285F4;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 6px;
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-top: 8px;
+            font-weight: bold;
+            border: none;
+            box-shadow: 0 2px 4px rgba(66,133,244,0.3);
+        }
+
+        .map-btn i {
+            margin-right: 4px;
+        }
+
+        /* Info Badge & Alerts */
+        .badge {
+            display: inline-block;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            margin-right: 5px;
+        }
+        .badge-smoke { background-color: #ffe6e6; color: #cc0000; }
+        .badge-cost { background-color: #e8f5e9; color: #2e7d32; }
+        .badge-stay { background-color: #e3f2fd; color: #0d47a1; }
+
+        /* Bottom Nav Bar */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 60px;
+            background-color: var(--card-bg);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            border-top: 1px solid #e0e0e0;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            z-index: 1000;
+        }
+
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-light);
+            text-decoration: none;
+            font-size: 0.75rem;
+            cursor: pointer;
+            background: none;
+            border: none;
+            width: 20%;
+        }
+
+        .nav-item i {
+            font-size: 1.2rem;
+            margin-bottom: 4px;
+        }
+
+        .nav-item.active {
+            color: var(--primary-color);
+            font-weight: bold;
+        }
+
+        /* List styling */
+        ul.list-style {
+            padding-left: 20px;
+            font-size: 0.9rem;
+        }
+        ul.list-style li {
+            margin-bottom: 8px;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <header class="app-header">
+        <h1 id="header-title">四國山陽自駕浪漫之旅</h1>
+        <p>📅 6/13 - 6/21 (九天八夜) 🚗 March自駕 + SEP</p>
+    </header>
+
+    <div class="container">
+        
+        <!-- SECTION 1: ITINERARY -->
+        <div id="itinerary-section" class="tab-content active">
+            <div class="day-selector">
+                <button class="day-btn active" onclick="switchDay(1)">D1 6/13</button>
+                <button class="day-btn" onclick="switchDay(2)">D2 6/14</button>
+                <button class="day-btn" onclick="switchDay(3)">D3 6/15</button>
+                <button class="day-btn" onclick="switchDay(4)">D4 6/16</button>
+                <button class="day-btn" onclick="switchDay(5)">D5 6/17</button>
+                <button class="day-btn" onclick="switchDay(6)">D6 6/18</button>
+                <button class="day-btn" onclick="switchDay(7)">D7 6/19</button>
+                <button class="day-btn" onclick="switchDay(8)">D8 6/20</button>
+                <button class="day-btn" onclick="switchDay(9)">D9 6/21</button>
+            </div>
+
+            <!-- Day 1 -->
+            <div id="day-1-content" class="day-content">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">高松</span></div>
+                    <p><strong>Hostel JAQ takamatsu</strong> (NT$ 2,403)</p>
+                    <a href="https://maps.google.com/?q=Hostel+JAQ+takamatsu" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">18:05</div>
+                            <div class="timeline-title">抵達高松機場 (CI178)</div>
+                            <div class="timeline-desc">🚬 出機場大門外有指定戶外吸菸區，取車前可補一根。</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">19:00</div>
+                            <div class="timeline-title">NISSAN租車取車 (March)</div>
+                            <div class="timeline-desc">辦理手續，加購NOC保險，確認購買9日SEP。</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">20:30</div>
+                            <div class="timeline-title">入住飯店 & 商店街宵夜</div>
+                            <div class="timeline-desc">前往高松中央商店街，享用讚岐烏龍麵或骨付鳥宵夜。</div>
+                            <a href="https://maps.google.com/?q=Takamatsu+Central+Shopping+Street" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 商店街導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 2 -->
+            <div id="day-2-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">松山</span></div>
+                    <p><strong>松山全日空皇冠假日飯店</strong> (NT$ 2,450)</p>
+                    <a href="https://maps.google.com/?q=ANA+Crowne+Plaza+Matsuyama" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">08:30</div>
+                            <div class="timeline-title">高松城 (玉藻公園)</div>
+                            <div class="timeline-desc">參觀極具特色的三大水城之一。</div>
+                            <a href="https://maps.google.com/?q=Takamatsu+Castle" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 高松城導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">11:30</div>
+                            <div class="timeline-title">大步危峽谷遊覽船 & 小步危</div>
+                            <div class="timeline-desc">搭乘觀光船（30分鐘），欣賞奇岩絕景。中午在附近吃祖谷蕎麥麵。<br>🚬 售票處旁設有寬廣戶外吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Oboke+Gorge+Pleasure+Boat" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 大步危遊船導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">16:30</div>
+                            <div class="timeline-title">抵達松山 & 道後溫泉周邊散步</div>
+                            <div class="timeline-desc">開車橫跨四國抵達松山入住。晚上去道後溫泉街散步看少爺機關鐘、泡足湯。<br>🚬 飯店內設有舒適吸菸室。</div>
+                            <a href="https://maps.google.com/?q=Dogo+Onsen+Honkan" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 道後溫泉導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 3 -->
+            <div id="day-3-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">松山</span></div>
+                    <p><strong>松山全日空皇冠假日飯店</strong> (續住)</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:00</div>
+                            <div class="timeline-title">松山城 (單人空中吊椅)</div>
+                            <div class="timeline-desc">搭乘特色吊椅登上天守閣，俯瞰瀨戶內海。<br>🚬 山頂指定位置設有吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Matsuyama+Castle+Ropeway" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 松山城纜車導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">11:30</div>
+                            <div class="timeline-title">萬翠莊</div>
+                            <div class="timeline-desc">參觀山腳下的優雅法式洋樓。</div>
+                            <a href="https://maps.google.com/?q=Bansuisou" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 萬翠莊導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">13:00</div>
+                            <div class="timeline-title">大街道、銀天街購物日</div>
+                            <div class="timeline-desc">瘋狂逛街採購，尋找「扭蛋之森」大扭特扭，晚餐品嚐愛媛鯛魚飯。</div>
+                            <a href="https://maps.google.com/?q=Okaido+Shopping+Street" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 大街道導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 4 -->
+            <div id="day-4-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">廣島</span></div>
+                    <p><strong>廣島全日空皇冠假日飯店</strong> (NT$ 3,894)</p>
+                    <a href="https://maps.google.com/?q=ANA+Crowne+Plaza+Hiroshima" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:30</div>
+                            <div class="timeline-title">島波海道自駕 ➔ 龜老山展望公園</div>
+                            <div class="timeline-desc">開車橫跨世界級橋樑。龜老山可360度俯瞰來島海峽大橋絕景。<br>🚬 停車場旁設有吸菸區，沿途「道の駅」亦有大量吸菸所。</div>
+                            <a href="https://maps.google.com/?q=Kirosan+Observatory+Park" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 龜老山導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">11:30</div>
+                            <div class="timeline-title">島波海道跳島 & 檸檬拉麵</div>
+                            <div class="timeline-desc">中途在島上享用午餐，隨後走山陽自動車道奔向廣島市。</div>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">16:30</div>
+                            <div class="timeline-title">廣島本通商店街 & Minamoa廣島</div>
+                            <div class="timeline-desc">逛最新商場，朝聖 AKOMEYA TOKYO 精緻日式雜貨。<br>🚬 飯店內備有密閉吸菸室。</div>
+                            <a href="https://maps.google.com/?q=AKOMEYA+TOKYO+MINAMOA+Hiroshima" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> AKOMEYA廣島導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 5 -->
+            <div id="day-5-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">廣島</span></div>
+                    <p><strong>廣島全日空皇冠假日飯店</strong> (續住)</p>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:00</div>
+                            <div class="timeline-title">廣島城 & 原子彈爆炸圓頂屋</div>
+                            <div class="timeline-desc">市區歷史散策。</div>
+                            <a href="https://maps.google.com/?q=Atomic+Bomb+Dome" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 原爆圓頂導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">12:30</div>
+                            <div class="timeline-title">宮島 嚴島神社 (看滿潮大鳥居)</div>
+                            <div class="timeline-desc">開車至宮島口停放，搭渡輪進宮島。欣賞佇立於海中的神聖海上大鳥居，吃烤牡蠣。<br>🚬 宮島全島禁菸，僅在渡輪棧橋出口右側與主街後巷有特定吸菸室，進島前請注意。</div>
+                            <a href="https://maps.google.com/?q=Itsukushima+Shrine" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 嚴島神社導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">19:00</div>
+                            <div class="timeline-title">晚餐：鐵太廣島燒</div>
+                            <div class="timeline-desc">必吃經典美食，極具層次感的正宗廣島燒。</div>
+                            <a href="https://maps.google.com/?q=Hiroshima+Okonomiyaki" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 廣島燒導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 6 -->
+            <div id="day-6-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">鞆之浦</span></div>
+                    <p><strong>鞆の浦 Airbnb 獨棟包棟</strong> (NT$ 1,910)</p>
+                    <a href="https://maps.google.com/?q=Tomonoura+Joyato+Lighthouse" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">10:00</div>
+                            <div class="timeline-title">尾道山城 (千光寺、貓之細道)</div>
+                            <div class="timeline-desc">搭纜車上山，在貓之細道漫步尋找貓咪蹤跡，中午品嚐經典尾道拉麵。<br>🚬 纜車站旁設有吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Senkoji+Ropeway" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 尾道纜車導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">14:30</div>
+                            <div class="timeline-title">阿伏兎觀音</div>
+                            <div class="timeline-desc">斷崖絕壁之上的朱紅色寺廟，驚險而壯觀。</div>
+                            <a href="https://maps.google.com/?q=Abuto+Kannon" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 阿伏兔觀音導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">16:30</div>
+                            <div class="timeline-title">入住鞆之浦 Airbnb 海濱漫步</div>
+                            <div class="timeline-desc">入住「崖上的波妞」原型港町。在清幽的常夜燈碼頭散步看日落。<br>🚬 木造老街區請勿吸菸，需至海濱大停車場開放區域。</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 7 -->
+            <div id="day-7-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">岡山</span></div>
+                    <p><strong>APA飯店 岡山站前店</strong> (NT$ 2,476)</p>
+                    <a href="https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:00</div>
+                            <div class="timeline-title">福禪寺 對潮樓</div>
+                            <div class="timeline-desc">靜坐榻榻米上，觀賞無敵客觀的天然窗框海景。</div>
+                            <a href="https://maps.google.com/?q=Fukuzenji+Taichorou" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 對潮樓導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">11:30</div>
+                            <div class="timeline-title">倉敷美觀地區</div>
+                            <div class="timeline-desc">柳樹、白壁與小橋流水的江戶風情。午餐吃 Kappa 炸豬排。<br>🚬 中央公廁旁、大型收費停車場周邊設有專屬吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Kurashiki+Bikan+Historical+Quarter" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 倉敷美觀導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">17:00</div>
+                            <div class="timeline-title">入住岡山 & AEON Mall 大逛街</div>
+                            <div class="timeline-desc">入住車站旁APA，直奔強大AEON大採購，晚餐推薦千屋牛燒肉。</div>
+                            <a href="https://maps.google.com/?q=AEON+MALL+Okayama" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> AEON導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 8 -->
+            <div id="day-8-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">住宿資訊 <span class="badge badge-stay">高松</span></div>
+                    <p><strong>高松織女星飯店 (Hotel Vega Takamatsu)</strong> (NT$ 2,409)</p>
+                    <a href="https://maps.google.com/?q=Hotel+Vega+Takamatsu" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 開啟地圖導航</a>
+                </div>
+                <div class="card">
+                    <div class="card-title">今日時間軸</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:00</div>
+                            <div class="timeline-title">岡山城 & 岡山後樂園</div>
+                            <div class="timeline-desc">黑色的烏城與日本三大名園，精緻借景非常大器。<br>🚬 景點收費站外大型停車場有吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Okayama+Korakuen+Garden" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 後樂園導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">13:30</div>
+                            <div class="timeline-title">跨越瀨戶大橋 (與島PA展望)</div>
+                            <div class="timeline-desc">自駕駛過偉大的跨海大橋，中途在與島 PA 下車拍大橋宏偉全景。<br>🚬 與島PA設有極佳的戶外吸菸區。</div>
+                            <a href="https://maps.google.com/?q=Yoshima+PA" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 與島PA導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">15:30</div>
+                            <div class="timeline-title">四國水族館 或 高松驚安殿堂</div>
+                            <div class="timeline-desc">可悠閒看海豚表演，或直接回高松唐吉訶德進行最後伴手禮採購、入住飯店。</div>
+                            <a href="https://maps.google.com/?q=Shikoku+Aquarium" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 四國水族館導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Day 9 -->
+            <div id="day-9-content" class="day-content" style="display:none;">
+                <div class="card">
+                    <div class="card-title">今日時間軸 (最後一天)</div>
+                    <div class="timeline">
+                        <div class="timeline-item">
+                            <div class="timeline-time">09:15</div>
+                            <div class="timeline-title">金刀比羅宮 (挑戰785階)</div>
+                            <div class="timeline-desc">參拜日本人一生必去一次的海上守護神。下山吃讚岐烏龍麵與金箔冰淇淋。<br>🚬 參道沿街多家土產店門口有設集菸桶。</div>
+                            <a href="https://maps.google.com/?q=Kotohiragu+Shrine" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 金刀比羅宮導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">13:30</div>
+                            <div class="timeline-title">高屋神社 (天空之鳥居)</div>
+                            <div class="timeline-desc">將車開上山頂本宮，鳥居框住一望無際的沙灘海景，如落人間仙境。</div>
+                            <a href="https://maps.google.com/?q=Takaya+Shrine" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 天空鳥居導航</a>
+                        </div>
+                        <div class="timeline-item">
+                            <div class="timeline-time">16:30</div>
+                            <div class="timeline-title">高松機場還車 ➔ 19:05 登機</div>
+                            <div class="timeline-desc">March加油加滿還車，結清手續。機場二樓及免稅店旁有極乾淨的吸菸室。搭乘 CI179 返台。</div>
+                            <a href="https://maps.google.com/?q=Takamatsu+Airport" class="map-btn" target="_blank"><i class="fas fa-map-marker-alt"></i> 高松機場導航</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SECTION 2: TRANSPORTATION -->
+        <div id="transport-section" class="tab-content">
+            <div class="card">
+                <div class="card-title">租車與過路費 PASS</div>
+                <ul class="list-style">
+                    <li><strong>車款：</strong> NISSAN 租車 - March 小轎車</li>
+                    <li><strong>租借時間：</strong> 6/13 19:00 ~ 6/21 16:30</li>
+                    <li><strong>路網高速 Pass：</strong> 現場購買 <strong>9日 SEP (San'in-Setouchi-Shikoku Expressway Pass)</strong></li>
+                    <li><strong>備註：</strong> 全程高速公路過路費（除部分極少數特殊特許道路外）均由 SEP 全包。</li>
+                </ul>
+            </div>
+            <div class="card">
+                <div class="card-title">自駕注意事項</div>
+                <ul class="list-style">
+                    <li><strong>必帶證件：</strong> 台灣駕照正本 + 監理所申請的<strong>「日文譯本」</strong>，缺一不可。</li>
+                    <li><strong>安心保險：</strong> 現場務必加購 NOC (營業損失補償) 安心特約險。</li>
+                    <li><strong>車機導航：</strong> March 車型較小，建議自備車用手機支架，看 Google Map 最直覺。</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 3: ACCOMMODATION -->
+        <div id="hotel-section" class="tab-content">
+            <div class="card">
+                <div class="card-title">全程飯店總覽</div>
+                <ul class="list-style">
+                    <li><strong>6/13-14 (1晚)：</strong> Hostel JAQ takamatsu (NT$ 2,403)</li>
+                    <li><strong>6/14-16 (2晚)：</strong> 松山全日空皇冠假日飯店 (NT$ 2,450/晚) 🚬 設有吸菸室</li>
+                    <li><strong>6/16-18 (2晚)：</strong> 廣島全日空皇冠假日飯店 (NT$ 3,894/晚) 🚬 設有吸菸室</li>
+                    <li><strong>6/18-19 (1晚)：</strong> 鞆の浦 Airbnb 獨棟 (NT$ 1,910)</li>
+                    <li><strong>6/19-20 (1晚)：</strong> 💥新改：APA飯店 岡山站前店 (NT$ 2,476)</li>
+                    <li><strong>6/20-21 (1晚)：</strong> 💥新改：高松織女星飯店 (NT$ 2,409)</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 4: PACKING -->
+        <div id="packing-section" class="tab-content">
+            <div class="card">
+                <div class="card-title">必帶行李清單</div>
+                <ul class="list-style">
+                    <li>護照、信用卡（推薦高回饋卡、綁定Apple Pay）</li>
+                    <li>台灣駕照正本 + <strong>日文譯本</strong> 🌟（最重要！）</li>
+                    <li>日圓現金（小島小吃攤及神社只收現）</li>
+                    <li>車用手機支架、車充線、行動電源</li>
+                    <li>防曬用品、遮陽帽、初夏薄外套</li>
+                    <li>好走的球鞋/運動鞋（D9 爬金刀比羅宮必備）</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- SECTION 5: BUDGET -->
+        <div id="budget-section" class="tab-content">
+            <div class="card">
+                <div class="card-title">預算與每日花費估算</div>
+                <p>目標：扣除機酒租車，每人每日不超過 NT$ 2,000 (雙人每日約日圓 20,000円)。</p>
+                <br>
+                <table style="width:100%; font-size:0.85rem; border-collapse:collapse;">
+                    <tr style="border-bottom:1px solid #eee; text-align:left; color:var(--primary-color);">
+                        <th style="padding:6px;">項目</th><th style="padding:6px;">預估花費 (日圓)</th><th style="padding:6px;">折合台幣</th>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D1 晚餐點心</td><td style="padding:6px;">4,000円</td><td style="padding:6px;">~NT$ 788</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D2 船票+餐飲</td><td style="padding:6px;">11,000円</td><td style="padding:6px;">~NT$ 2,165</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D3 門票+餐飲</td><td style="padding:6px;">9,000円</td><td style="padding:6px;">~NT$ 1,770</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D4 油資+海鮮餐</td><td style="padding:6px;">11,500円</td><td style="padding:6px;">~NT$ 2,264</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D5 停車渡輪廣島燒</td><td style="padding:6px;">13,000円</td><td style="padding:6px;">~NT$ 2,560</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D6 門票+拉麵</td><td style="padding:6px;">9,500円</td><td style="padding:6px;">~NT$ 1,870</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D7 門票+燒肉</td><td style="padding:6px;">14,000円</td><td style="padding:6px;">~NT$ 2,758</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D8 門票+居酒屋</td><td style="padding:6px;">12,000円</td><td style="padding:6px;">~NT$ 2,360</td>
+                    </tr>
+                    <tr style="border-bottom:1px solid #eee;">
+                        <td style="padding:6px;">D9 停車加滿油機場餐</td><td style="padding:6px;">14,000円</td><td style="padding:6px;">~NT$ 2,758</td>
+                    </tr>
+                </table>
+                <br>
+                <p style="font-size:0.8rem; color:var(--secondary-color); font-weight:bold;">💡 提示：此預算未包含瘋狂購物的額外刷卡，純為每日吃喝玩樂與景點開銷，控制得非常完美！</p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+        <button class="nav-item active" onclick="switchTab('itinerary', this)">
+            <i class="fas fa-calendar-alt"></i> 行程
+        </button>
+        <button class="nav-item" onclick="switchTab('transport', this)">
+            <i class="fas fa-car"></i> 交通
+        </button>
+        <button class="nav-item" onclick="switchTab('hotel', this)">
+            <i class="fas fa-hotel"></i> 住宿
+        </button>
+        <button class="nav-item" onclick="switchTab('packing', this)">
+            <i class="fas fa-suitcase"></i> 行李
+        </button>
+        <button class="nav-item" onclick="switchTab('budget', this)">
+            <i class="fas fa-wallet"></i> 預算
+        </button>
+    </nav>
+
+    <script>
+        // Tab switching logic
+        function switchTab(tabId, el) {
+            // Update active nav button
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            el.classList.remove('active'); 
+            el.classList.add('active');
+
+            // Update active content section
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabId + '-section').classList.add('active');
+            
+            // Adjust header subtitle dynamically
+            const sub = document.querySelector('.app-header p');
+            if(tabId === 'itinerary') {
+                sub.innerText = "📅 6/13 - 6/21 (九天八夜) 🚗 March自駕 + SEP";
+            } else if(tabId === 'transport') {
+                sub.innerText = "🚗 9日 SEP 與 March 駕車指南";
+            } else if(tabId === 'hotel') {
+                sub.innerText = "🏨 精選全日空、APA與海景獨棟包棟";
+            } else if(tabId === 'packing') {
+                sub.innerText = "🧳 自駕譯本與爬山必備清單";
+            } else if(tabId === 'budget') {
+                sub.innerText = "💰 每日吃喝花費與換匯明細";
+            }
+            window.scrollTo(0,0);
+        }
+
+        // Itinerary Day switching logic
+        function switchDay(dayNum) {
+            document.querySelectorAll('.day-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            document.querySelectorAll('.day-content').forEach(content => content.style.display = 'none');
+            document.getElementById('day-' + dayNum + '-content').style.display = 'block';
+        }
+    </script>
+</body>
+</html>
