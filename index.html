@@ -4,10 +4,14 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌊 山陽四國．手帳風情侶自駕遊</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts 圓體 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+TC:wght@400;500;700&display=swap">
     
+    <!-- Firebase App & Services -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
@@ -25,12 +29,11 @@
             border-radius: 24px;
             box-shadow: 5px 5px 0px #E2DCD0;
         }
-        /* 更新為使用者指定的藍色色號 #33CCFF */
         .diary-btn-blue {
-            background-color: #33CCFF;
+            background-color: #4A7C59;
             color: white;
             border-radius: 16px;
-            box-shadow: 3px 3px 0px #0099CC;
+            box-shadow: 3px 3px 0px #2A4D34;
         }
         .diary-btn-amber {
             background-color: #D9822B;
@@ -51,6 +54,7 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-28 text-gray-800">
 
+    <!-- Top Scrapbook Header -->
     <header class="bg-[#688B9A] text-white px-5 pt-6 pb-5 rounded-b-[32px] shadow-md border-b-4 border-[#4E6E7B] sticky top-0 z-40">
         <div class="flex justify-between items-center mb-4">
             <div>
@@ -64,11 +68,14 @@
             </div>
         </div>
         
+        <!-- 橫向捲動日期選擇器 -->
         <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector"></div>
     </header>
 
+    <!-- Main Content Stage -->
     <main class="px-4 py-4 flex-grow" id="appBody"></main>
 
+    <!-- 行程詳情與照片上傳彈窗 (Modal) -->
     <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
         <div class="bg-white rounded-3xl w-full max-w-sm p-5 border-2 border-[#E6DFD1] shadow-2xl relative max-h-[85vh] overflow-y-auto hide-scrollbar">
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-circle-xmark text-xl"></i></button>
@@ -76,8 +83,9 @@
         </div>
     </div>
 
+    <!-- 底部導航列 -->
     <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-40 rounded-2xl p-2 flex justify-around items-center">
-        <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#33CCFF] font-bold active:scale-95 transition-all">
+        <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all">
             <i class="fa-solid fa-compass text-lg mb-0.5"></i>
             <span class="text-[10px] font-bold">行程</span>
         </button>
@@ -128,18 +136,22 @@
         let activeTab = 'schedule';
         let selectedDay = 1;
 
+        // 成員名冊優化: 僅留下名字，不加上頭銜與標籤
         let membersList = JSON.parse(localStorage.getItem('m_list')) || [
             { id: 'm1', name: 'George', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
             { id: 'm2', name: 'Charlotte', avatar: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&w=120&q=80' }
         ];
 
+        // 離線景點照片庫
         let spotPhotos = JSON.parse(localStorage.getItem('spot_photos')) || {};
 
+        // 獨立行前待辦
         let todoData = JSON.parse(localStorage.getItem('todo_data')) || [
             { id: 't1', text: '線上申辦國際駕照與日文譯本', done: true },
             { id: 't2', text: '填寫 Visit Japan Web 申報 QR Code', done: false }
         ];
 
+        // 行李打包清單結構優化 (按項目分組)
         let baggageData = JSON.parse(localStorage.getItem('baggage_groups')) || {
             "日本旅遊必帶: 證件與重要資料": [
                 { id: "b1_1", text: "護照", done: false },
@@ -151,7 +163,7 @@
             "盥洗與個人用品": [
                 { id: "b2_1", text: "牙刷牙膏、刮鬍刀、毛巾", done: false },
                 { id: "b2_2", text: "梳子、小罐洗髮精與沐浴乳", done: false },
-                { id: "b2_3", text: "化妝包、防曬乳、化妝棉／棉方棒", done: false },
+                { id: "b2_3", text: "化妝包、防曬乳、化妝棉／棉花棒", done: false },
                 { id: "b2_4", text: "女性生理用品", done: false },
                 { id: "b2_5", text: "個人藥品", done: false }
             ],
@@ -173,6 +185,7 @@
             { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: 'George', split: '雙人均分' }
         ];
 
+        // 包含完整備註與地圖代碼的 9 日手帳大數據
         const mainItinerary = {
             1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
                 { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://maps.google.com/?q=Takamatsu+Airport" },
@@ -195,7 +208,7 @@
                 { id: "4_1", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "大島最具代表性景點，隈研吾設計的無機調木質全景觀景台。", note: "能 360 度俯瞰壯觀的來島海峽大橋，美到令人摒息。", map: "https://maps.google.com/?q=Kirosan+Observatory+Park" },
                 { id: "4_2", time: "11:00", type: "transport", spot: "島波海道自駕跳島", desc: "一路開車跨越伯方島、大三島、生口島，中午在島上吃檸檬拉麵。", note: "跨海橋樑費 SEP 已全包，中途需加油預估 2,000 日圓。", map: "https://maps.google.com/?q=Shimanami+Kaido" },
                 { id: "4_3", type: "hotel", spot: "廣島全日空皇冠假日飯店", desc: "地址：廣島県廣島市中区中町7-20", note: "下海道後走山陽道拉車約 1.5 小時至廣島市區辦理入住。", map: "https://maps.google.com/?q=ANA+Crowne+Plaza+Hiroshima" },
-                { id: "4_4", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛街，朝盛新開幕商場的【AKOMEYA TOKYO】精緻生活雜貨。", note: "Charlotte 的重點大店！晚餐順便尋找廣島在地小吃。", map: "https://maps.google.com/?q=Hiroshima+Hondori+Shopping+Street" }
+                { id: "4_4", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛街，朝聖新開幕商場的【AKOMEYA TOKYO】精緻生活雜貨。", note: "Charlotte 的重點大店！晚餐順便尋找廣島在地小吃。", map: "https://maps.google.com/?q=Hiroshima+Hondori+Shopping+Street" }
             ]},
             5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島城 ➔ 原爆圓頂 ➔ 宮島嚴島神社", focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "宮島全島嚴格禁菸，但在「宮島棧橋出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
                 { id: "5_1", time: "09:00", type: "scenic", spot: "原子彈爆炸圓頂屋 & 廣島城", desc: "漫步平和紀念公園，見證歷史傷痕與重生歷史。", note: "廣島城又稱鯉城，非常雄偉好拍。", map: "https://maps.google.com/?q=Atomic+Bomb+Dome" },
@@ -253,7 +266,7 @@
                 const card = document.createElement('button');
                 card.className = `flex-shrink-0 w-[64px] py-2 rounded-2xl flex flex-col items-center justify-center border-2 transition-all active:scale-95 ${
                     isSelected 
-                    ? 'bg-[#33CCFF]/20 border-[#33CCFF] text-[#006688] font-bold shadow-sm' 
+                    ? 'bg-[#EAD9C9] border-[#C4A484] text-[#5C4033] font-bold shadow-sm' 
                     : 'bg-white/80 border-[#E6DFD1] text-gray-600'
                 }`;
                 card.onclick = () => {
@@ -274,7 +287,7 @@
             tabs.forEach(t => {
                 const navBtn = document.getElementById(`nav-${t}`);
                 navBtn.className = t === tabName 
-                    ? "flex flex-col items-center text-[#33CCFF] font-bold active:scale-95 transition-all"
+                    ? "flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all"
                     : "flex flex-col items-center text-gray-400 active:scale-95 transition-all";
             });
             renderDateSelector();
@@ -315,7 +328,7 @@
             container.innerHTML = `
                 <div class="diary-card p-4 mb-4 bg-white">
                     <div class="flex justify-between items-center mb-2">
-                        <h2 class="text-sm font-bold text-[#0088B3]">✨ Day ${selectedDay} • 行程手札</h2>
+                        <h2 class="text-sm font-bold text-[#4A7C59]">✨ Day ${selectedDay} • 行程手札</h2>
                         <span class="bg-[#F4F1EA] border border-[#D9D2C2] text-xs px-2.5 py-0.5 rounded-full font-medium text-gray-700">${data.weather}</span>
                     </div>
                     <p class="text-xs text-gray-800 font-medium bg-[#EBF3F5] border border-[#B2CCD4] p-2 rounded-xl leading-relaxed">
@@ -395,20 +408,21 @@
             };
         }
 
-        // --- MODULE 2: BOOKINGS ---
+        // --- MODULE 2: BOOKINGS (機票與住宿分攤大補貼) ---
         function renderBookings() {
             const container = document.getElementById('appBody');
             container.innerHTML = `
+                <!-- 雙登機證：去程與回程 -->
                 <div class="diary-card overflow-hidden bg-white mb-4 relative">
-                    <div class="bg-[#33CCFF] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
+                    <div class="bg-[#4A7C59] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
                         <span>✈️ OUTBOUND PASS / 華航去程</span>
                         <span class="font-mono">CI178</span>
                     </div>
                     <div class="p-3.5 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
                         <div><p class="text-lg font-bold font-mono text-gray-800">TPE</p><p class="text-[9px] text-gray-400">桃園台北</p></div>
                         <div class="flex flex-col items-center justify-center">
-                            <p class="text-[9px] font-mono text-[#33CCFF] font-bold">2026.06.13</p>
-                            <div class="w-full h-[1.5px] bg-gray-200 relative my-0.5"><i class="fa-solid fa-plane text-[10px] text-[#33CCFF] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i></div>
+                            <p class="text-[9px] font-mono text-[#4A7C59] font-bold">2026.06.13</p>
+                            <div class="w-full h-[1.5px] bg-gray-200 relative my-0.5"><i class="fa-solid fa-plane text-[10px] text-[#4A7C59] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i></div>
                             <p class="text-[9px] text-gray-400">14:15 起飛</p>
                         </div>
                         <div><p class="text-lg font-bold font-mono text-gray-800">TAK</p><p class="text-[9px] text-gray-400">高松機場</p></div>
@@ -431,6 +445,7 @@
                     </div>
                 </div>
 
+                <!-- 住宿卡片大補貼：四間全面到齊 -->
                 <div class="diary-card p-4 bg-white mb-4 space-y-3">
                     <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>精確房間預訂與台幣分攤金額</h3>
                     
@@ -470,7 +485,7 @@
             `;
         }
 
-        // --- MODULE 3: EXPENSE ---
+        // --- MODULE 3: EXPENSE (記帳) ---
         function renderExpense() {
             const container = document.getElementById('appBody');
             let totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
@@ -493,8 +508,8 @@
             });
 
             container.innerHTML = `
-                <div class="diary-card p-4 bg-gradient-to-br from-[#33CCFF] to-[#0099CC] text-white mb-4">
-                    <p class="text-[10px] text-blue-50 tracking-wider font-bold">📊 日誌累計總支出明細</p>
+                <div class="diary-card p-4 bg-gradient-to-br from-[#688B9A] to-[#557583] text-white mb-4">
+                    <p class="text-[10px] text-blue-100 tracking-wider font-bold">📊 日誌累計總支出明細</p>
                     <h2 class="text-2xl font-mono font-black text-amber-300 mt-1">¥ ${totalJpy.toLocaleString()} <span class="text-xs font-normal text-white">JPY</span></h2>
                     <div class="border-t border-white/20 mt-2 pt-2 flex justify-between text-xs text-blue-50">
                         <span>預估換算台幣金額</span><span class="font-bold font-mono">~ NT$ ${totalTwd.toLocaleString()} 元</span>
@@ -543,20 +558,22 @@
             renderExpense();
         }
 
-        // --- MODULE 4: PLANNING ---
+        // --- MODULE 4: PLANNING (準備 - 行李清單全面重整) ---
         function renderPlanning() {
             const container = document.getElementById('appBody');
             
+            // 1. 待辦事項區
             let todoHtml = '';
             todoData.forEach((item, index) => {
                 todoHtml += `
                     <label class="flex items-center justify-between p-2 bg-[#FAF9F6] border border-[#E6DFD1] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
                         <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleTodo(${index})" class="w-4 h-4 rounded text-[#33CCFF] focus:ring-0">
+                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleTodo(${index})" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
                     </label>
                 `;
             });
 
+            // 2. 高規四分類行李清單區
             let baggageHtml = '';
             for (const [groupName, items] of Object.entries(baggageData)) {
                 let itemsHtml = '';
@@ -564,7 +581,7 @@
                     itemsHtml += `
                         <label class="flex items-center justify-between p-2 bg-white border border-[#EBE6DC] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
                             <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                            <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleBaggage('${groupName}', '${item.id}')" class="w-4 h-4 rounded text-[#33CCFF] focus:ring-0">
+                            <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleBaggage('${groupName}', '${item.id}')" class="w-4 h-4 rounded text-[#688B9A] focus:ring-0">
                         </label>
                     `;
                 });
@@ -572,7 +589,7 @@
                 baggageHtml += `
                     <div class="mb-4 last:mb-0">
                         <h4 class="text-xs font-bold text-[#557583] mb-1.5 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-[#33CCFF]"></span> ${groupName}
+                            <span class="w-1.5 h-1.5 rounded-full bg-[#688B9A]"></span> ${groupName}
                         </h4>
                         <div class="space-y-1.5 pl-2.5">${itemsHtml}</div>
                     </div>
@@ -582,7 +599,7 @@
             container.innerHTML = `
                 <div class="diary-card p-4 bg-white space-y-5">
                     <div>
-                        <h3 class="text-xs font-bold text-[#0088B3] mb-2.5 flex items-center gap-1.5">
+                        <h3 class="text-xs font-bold text-[#4A7C59] mb-2.5 flex items-center gap-1.5">
                             <i class="fa-solid fa-square-check"></i> 📋 行前待辦事項
                         </h3>
                         <div class="space-y-1.5">${todoHtml}</div>
@@ -614,7 +631,7 @@
             renderPlanning();
         }
 
-        // --- MODULE 5: MEMBERS ---
+        // --- MODULE 5: MEMBERS (成員名字乾淨呈現) ---
         function renderMembers() {
             const container = document.getElementById('appBody');
             let membersHtml = '';
@@ -622,7 +639,7 @@
                 membersHtml += `
                     <div class="flex items-center justify-between bg-[#FDFDFD] p-3 rounded-xl border-2 border-[#E6DFD1]">
                         <div class="flex items-center gap-3">
-                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-11 h-11 rounded-full object-cover border-2 border-[#33CCFF] shadow-inner">
+                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-11 h-11 rounded-full object-cover border-2 border-[#688B9A] shadow-inner">
                             <div>
                                 <p class="text-xs font-bold text-gray-800">${m.name}</p>
                                 <p class="text-[9px] text-gray-400 font-mono">SWEET_COUPLE_0${idx+1}</p>
