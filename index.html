@@ -99,125 +99,26 @@
     </nav>
 
     <script>
-        // --- 記帳功能模組 (整合版：匯率同步 + CRUD 操作) ---
-
-// 1. 初始化資料與匯率
-let exchangeRate = 0.215; 
-
-async function syncExchangeRate() {
-    try {
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-        const data = await res.json();
-        exchangeRate = data.rates.TWD;
-    } catch (e) { console.warn("匯率同步失敗，使用預設值"); }
-    renderExpense();
-}
-
-// 2. 核心操作 (增/刪/改)
-function addExpense() {
-    const id = document.getElementById('expId').value; // 隱藏欄位判斷是否為編輯
-    const text = document.getElementById('expText').value;
-    const amountJpy = parseFloat(document.getElementById('expJpy').value);
-    const category = document.getElementById('expCat').value;
-    const payer = document.getElementById('expPayer').value;
-    const split = document.getElementById('expSplit').value;
-
-    if (!text || isNaN(amountJpy)) return alert("請輸入完整資訊");
-
-    if (id) {
-        // 更新模式
-        const index = expenseLedger.findIndex(i => i.id == id);
-        expenseLedger[index] = { id: parseInt(id), text, amountJpy, category, payer, split };
-    } else {
-        // 新增模式
-        expenseLedger.push({ id: Date.now(), text, amountJpy, category, payer, split });
-    }
-    
-    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-    renderExpense();
-}
-
-function deleteExpense(id) {
-    if(confirm("確定要刪除這筆支出嗎？")) {
-        expenseLedger = expenseLedger.filter(item => item.id !== id);
-        localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-        renderExpense();
-    }
-}
-
-function editExpense(id) {
-    const item = expenseLedger.find(i => i.id === id);
-    if (!item) return;
-    
-    document.getElementById('expId').value = item.id;
-    document.getElementById('expText').value = item.text;
-    document.getElementById('expJpy').value = item.amountJpy;
-    document.getElementById('expCat').value = item.category;
-    document.getElementById('expPayer').value = item.payer;
-    document.getElementById('expSplit').value = item.split;
-    window.scrollTo({ top: 150, behavior: 'smooth' });
-}
-
-// 3. 渲染介面
-function renderExpense() {
-    const container = document.getElementById('appBody');
-    const totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
-    const totalTwd = (totalJpy * exchangeRate).toFixed(0);
-
-    let listHtml = expenseLedger.map(item => `
-        <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E6DFD1] shadow-sm">
-            <div>
-                <p class="text-xs font-bold">${item.text}</p>
-                <p class="text-[10px] text-[#4A7C59]">${item.category} • ${item.payer}</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <p class="text-xs font-mono font-bold">¥${item.amountJpy.toLocaleString()}</p>
-                    <p class="text-[10px] text-red-400 font-mono">≈ NT$ ${(item.amountJpy * exchangeRate).toFixed(0)}</p>
-                </div>
-                <button onclick="editExpense(${item.id})" class="text-blue-400"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button onclick="deleteExpense(${item.id})" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-        </div>
-    `).join('');
-
-    container.innerHTML = `
-        <div class="diary-card p-5 bg-[#688B9A] text-white mb-6">
-            <h2 class="text-sm font-bold opacity-80">總支出儀表板</h2>
-            <div class="flex justify-between items-end mt-3">
-                <div><p class="text-[10px]">日幣總計</p><p class="text-xl font-mono font-bold">¥${totalJpy.toLocaleString()}</p></div>
-                <div class="text-right"><p class="text-[10px]">預估台幣</p><p class="text-2xl font-mono font-bold text-amber-300">NT$ ${totalTwd.toLocaleString()}</p></div>
-            </div>
-        </div>
-
-        <div class="diary-card p-5 bg-white mb-6">
-            <input type="hidden" id="expId">
-            <h3 class="text-xs font-bold text-gray-500 mb-4">＋ 記帳 / 編輯</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="expText" placeholder="項目名稱" class="col-span-2 border rounded-lg p-2 text-xs">
-                <input type="number" id="expJpy" placeholder="金額 (¥)" class="border rounded-lg p-2 text-xs">
-                <select id="expCat" class="border rounded-lg p-2 text-xs">
-                    <option>交通</option><option>美食</option><option>住宿</option><option>購物</option>
-                </select>
-                <select id="expPayer" class="border rounded-lg p-2 text-xs">
-                    ${membersList.map(m => `<option>${m.name}</option>`).join('')}
-                </select>
-                <select id="expSplit" class="border rounded-lg p-2 text-xs">
-                    <option>雙人均分</option><option>Charlotte 付</option><option>George 付</option>
-                </select>
-                <button onclick="addExpense()" class="col-span-2 bg-[#4A7C59] text-white py-2 rounded-lg text-xs font-bold active:scale-95">確認紀錄</button>
-            </div>
-        </div>
-
-        <div class="space-y-3 pb-20">
-            <h3 class="text-xs font-bold text-gray-500">📋 支出歷史明細</h3>
-            ${listHtml || '<p class="text-center text-xs text-gray-400 py-10">尚無紀錄</p>'}
-        </div>
-    `;
-}
-
-// 啟動
-syncExchangeRate();
+        // ==========================================
+        // 1. FIREBASE CONFIGURATION & INITIALIZATION
+        // ==========================================
+        const firebaseConfig = {
+            apiKey: "YOUR_FIREBASE_API_KEY",
+            authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+            projectId: "YOUR_PROJECT_ID",
+            storageBucket: "YOUR_PROJECT_ID.appspot.com",
+            messagingSenderId: "YOUR_SENDER_ID",
+            appId: "YOUR_APP_ID"
+        };
+        
+        let db; let storage;
+        try {
+            if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
+                firebase.initializeApp(firebaseConfig);
+                db = firebase.firestore();
+                storage = firebase.storage();
+            }
+        } catch(e) { console.log("Firebase 尚未填寫，自動切換至 LocalStorage 離線運行"); }
 
         // ==========================================
         // 2. STATE MANAGEMENT & DATA
@@ -265,103 +166,103 @@ syncExchangeRate();
             { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: '顥璋', split: '雙人均分' }
         ];
 
-        // 核心行程資料 (已將 Day 4, Day 5, Day 7 的所有景點導航與吸菸區改為真實 Google Map 關鍵字查詢網址)
+        // 核心行程資料
         const mainItinerary = {
             1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
-                { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport",
-                  smokeLocation: "航廈二樓國內線出發大廳旁室室內吸菸室、管制區內免稅店旁室內吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport+2F" },
-                { id: "1_2", time: "19:00", type: "transport", spot: "NISSAN 租車櫃台取車", desc: "至櫃台辦理手續，購買 9 日 SEP，檢查 March 車況。", note: "租車合約書與保險條款要收妥。", map: "https://www.google.com/maps/search/?api=1&query=NISSAN+Rent+A+Car+Takamatsu+Airport",
-                  smokeLocation: "高松機場航廈一樓巴士站牌旁 1 號指定戶外喫煙所（取車前可先補一根）。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport+Bus+Stop" },
+                { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://www.google.com/maps/search/?api=1&query=高松空港",
+                  smokeLocation: "航廈二樓國內線出發大廳旁室室內吸菸室、管制區內免稅店旁室內吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=高松空港+喫煙所" },
+                { id: "1_2", time: "19:00", type: "transport", spot: "NISSAN 租車櫃台取車", desc: "至櫃台辦理手續，購買 9 日 SEP，檢查 March 車況。", note: "租車合約書與保險條款要收妥。", map: "https://www.google.com/maps/search/?api=1&query=日産レンタカー+高松空港店",
+                  smokeLocation: "高松機場航廈一樓巴士站牌旁 1 號指定戶外喫煙所（取車前可先補一根）。", smokeMap: "https://www.google.com/maps/search/?api=1&query=高松空港+1號指定戶外喫煙所" },
                 { id: "1_3", time: "20:10", type: "hotel", spot: "Hostel JAQ takamatsu 入住", desc: "地址：香川県高松市片原町1-1", note: "辦理入住並放好大件行李。今日油資預估 300 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Hostel+JAQ+takamatsu",
-                  smokeLocation: "青年旅館全館禁菸。附近步行 2 分鐘的「FamilyMart 高松片原町店」門口設有煙灰缸槽。", smokeMap: "https://www.google.com/maps/search/?api=1&query=FamilyMart+Takamatsu+Kataharamachi" },
-                { id: "1_4", time: "20:30", type: "food", spot: "兵庫町/片原町商店街", desc: "步行至高松最長的商店街享用宵夜。", note: "推薦烏龍麵名店或在地名物骨付鳥（烤帶骨雞腿）。", map: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Kataharamachi+Shopping+Street",
-                  smokeLocation: "商店街公共區域禁菸。推薦去設有吸菸席的居酒屋，或至「7-Eleven 高松丸龜町店」戶外定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=7-Eleven+Takamatsu+Marugamachi" }
+                  smokeLocation: "青年旅館全館禁菸。附近步行 2 分鐘的「FamilyMart 高松片原町店」門口設有煙灰缸槽。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ファミリーマート+高松片原町店" },
+                { id: "1_4", time: "20:30", type: "food", spot: "兵庫町/片原町商店街", desc: "步行至高松最長的商店街享用宵夜。", note: "推薦烏龍麵名店或在地名物骨付鳥（烤帶骨雞腿）。", map: "https://www.google.com/maps/search/?api=1&query=高松+片原町商店街",
+                  smokeLocation: "商店街公共區域禁菸。推薦去設有吸菸席的居酒屋，或至「7-Eleven 高松丸龜町店」戶外定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=セブン-イレブン+高松丸亀町店" }
             ]},
             2: { date: "6/14 (日)", weather: "⛅ 多雲 24°C", title: "高松城 ➔ 大步危秘境 ➔ 松山夕陽", focus: "四國三大水城之一、德島秘境遊船、傍晚拉車至愛媛。", smoking: "大步危觀光船售票處旁有極大的戶外吸菸區。松山全日空飯店館內設有舒適密閉吸菸室。", items: [
-                { id: "2_1", time: "08:30", type: "scenic", spot: "高松城 (玉藻公園)", desc: "散步前往欣賞罕見的護城河引進海水的「水城」。", note: "可以在天守台遺跡俯瞰瀨戶內海與琴電列車掠過。", map: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Castle+Tamamo+Park",
-                  smokeLocation: "玉藻公園東門售票處旁、以及艮櫓附近的庭園休息區設有定點煙灰缸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Tamamo+Park+East+Gate" },
-                { id: "2_2", time: "11:30", type: "scenic", spot: "大步危峽谷觀光遊覽船", desc: "搭乘觀光船（航程 30 分鐘），沿途欣賞急流與壯麗奇岩。", note: "雙人門票 3,000 日圓。下船後順路開車經小步危拍照，中午吃祖谷蕎麥麵。", map: "https://www.google.com/maps/search/?api=1&query=Oboke+Gorge+Pleasure+Boat",
-                  smokeLocation: "「大步危峽曼那卡 (Mannaka)」大建築物一樓戶外乘船售票處旁，設有寬敞的戶外吸菸專區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Obokekyo+Mannaka" },
-                { id: "2_3", time: "16:30", type: "hotel", spot: "松山全日空皇冠假日飯店", desc: "地址：愛媛県松山市一番町3丁目2-1", note: "橫跨四國拉車約 2.5 小時，走高速公路因有 SEP 免過路費。", map: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Matsuyama",
-                  smokeLocation: "飯店館內特定樓層（如 1 樓或 L 大廳層）設有高規格密閉負壓吸菸室，客房均禁菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Matsuyama+Lobby" },
-                { id: "2_4", time: "17:30", type: "food", spot: "道後溫泉周邊散步", desc: "晚餐在大街道享用愛媛鯛魚飯，晚上看少爺機關鐘。", note: "可以在周邊泡個溫馨的足湯，感受百年名湯的氛圍。", map: "https://www.google.com/maps/search/?api=1&query=Dogo+Onsen",
-                  smokeLocation: "道後溫泉本館正後方停車場旁、以及「道後溫泉車站」出站右側廣場角落有指定吸菸點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Dogo+Onsen+Station" }
+                { id: "2_1", time: "08:30", type: "scenic", spot: "高松城 (玉藻公園)", desc: "散步前往欣賞罕見的護城河引進海水的「水城」。", note: "可以在天守台遺跡俯瞰瀨戶內海與琴電列車掠過。", map: "https://www.google.com/maps/search/?api=1&query=高松城+玉藻公園",
+                  smokeLocation: "玉藻公園東門售票處旁、以及艮櫓附近的庭園休息區設有定點煙灰缸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=玉藻公園+東門售票處" },
+                { id: "2_2", time: "11:30", type: "scenic", spot: "大步危峽谷觀光遊覽船", desc: "搭乘觀光船（航程 30 分鐘），沿途欣賞急流與壯麗奇岩。", note: "雙人門票 3,000 日圓。下船後順路開車經小步危拍照，中午吃祖谷蕎麥麵。", map: "https://www.google.com/maps/search/?api=1&query=大歩危峡観光遊覧船",
+                  smokeLocation: "「大步危峽曼那卡 (Mannaka)」大建築物一樓戶外乘船售票處旁，設有寬敞的戶外吸菸專區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=大歩危峡まんなか" },
+                { id: "2_3", time: "16:30", type: "hotel", spot: "松山全日空皇冠假日飯店", desc: "地址：愛媛県松山市一番町3丁目2-1", note: "橫跨四國拉車約 2.5 小時，走高速公路因有 SEP 免過路費。", map: "https://www.google.com/maps/search/?api=1&query=ANA+クラウンプラザホテル松山",
+                  smokeLocation: "飯店館內特定樓層（如 1 樓或 L 大廳層）設有高規格密閉負壓吸菸室，客房均禁菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ANA+クラウンプラザホテル松山+喫煙所" },
+                { id: "2_4", time: "17:30", type: "food", spot: "道後溫泉周邊散步", desc: "晚餐在大街道享用愛媛鯛魚飯，晚上看少爺機關鐘。", note: "可以在周邊泡個溫馨的足湯，感受百年名湯的氛圍。", map: "https://www.google.com/maps/search/?api=1&query=道後温泉本館",
+                  smokeLocation: "道後溫泉本館正後方停車場旁、以及「道後溫泉車站」出站右側廣場角落有指定吸菸點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=道後温泉駅+喫煙所" }
             ]},
             3: { date: "6/15 (一)", weather: "🌧️ 局部雨 22°C", title: "松山城 ➔ 萬翠莊 ➔ 大街道購物日", focus: "體驗松山城單人空中吊椅、大街道與銀天街強大購物行程。", smoking: "松山城山頂廣場指定位置設有吸菸區；大街道商店街內部分柏青哥店或指定居酒屋有吸菸室。", items: [
-                { id: "3_1", time: "09:00", type: "scenic", spot: "松山城空中吊椅", desc: "搭乘超酷的「單人無安全帶吊椅」登上松山城天守。", note: "套票雙人 2,080 日圓。可以俯瞰整個松山市區與瀨戶內海。", map: "https://www.google.com/maps/search/?api=1&query=Matsuyama+Castle+Ropeway",
-                  smokeLocation: "松山城山頂本丸廣場的「長者平」休息站旁、以及天守入口販賣部前設有指定吸菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Matsuyama+Castle+Honmaru+Square" },
-                { id: "3_2", time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀法國文藝復興風格的浪漫洋樓。", note: "大正時期由久松定謨伯爵建造的別邸，非常適合拍照。", map: "https://www.google.com/maps/search/?api=1&query=Bansuiso",
-                  smokeLocation: "主建築物內部全面禁菸，館外後方花園斜坡停車場角落備有隱密吸菸缸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Bansuiso+Parking" },
-                { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝聖【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://www.google.com/maps/search/?api=1&query=Okaido+Shopping+Street",
-                  smokeLocation: "大街道內全面禁菸。可步行至「Lawson 松山大街道二丁目店」內部或周邊特定大樓吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Lawson+Matsuyama+Okaido+2-Chome" }
+                { id: "3_1", time: "09:00", type: "scenic", spot: "松山城空中吊椅", desc: "搭乘超酷的「單人無安全帶吊椅」登上松山城天守。", note: "套票雙人 2,080 日圓。可以俯瞰整個松山市區與瀨戶內海。", map: "https://www.google.com/maps/search/?api=1&query=松山城+ロープウェイのりば",
+                  smokeLocation: "松山城山頂本丸廣場的「長者平」休息站旁、以及天守入口販賣部前設有指定吸菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=松山城+本丸広場+喫煙所" },
+                { id: "3_2", time: "11:30", type: "scenic", spot: "萬翠莊", desc: "山腳下參觀法國文藝復興風格的浪漫洋樓。", note: "大正時期由久松定謨伯爵建造的別邸，非常適合拍照。", map: "https://www.google.com/maps/search/?api=1&query=萬翠荘",
+                  smokeLocation: "主建築物內部全面禁菸，館外後方花園斜坡停車場角落備有隱密吸菸缸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=萬翠荘+駐車場" },
+                { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝聖【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://www.google.com/maps/search/?api=1&query=松山+大街道商店街",
+                  smokeLocation: "大街道內全面禁菸。可步行至「Lawson 松山大街道二丁目店」內部或周邊特定大樓吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ローソン+松山大街道二丁目店" }
             ]},
             4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美來島海峽大橋景觀、傍晚朝聖黑之廣島城、本通與 Minamoa 瘋狂購物。", smoking: "龜老山展望台停車場旁設有吸菸區。廣島全日空飯店館內設有專用密閉吸菸室，本通商店街部分指定室內場所或柏青哥店亦備有吸菸區。", items: [
-                { id: "4_1", time: "08:30", type: "transport", spot: "退房出發 ➔ 進入島波海道", desc: "開車北上至今治市，準備進入世界級自行車聖地公路島波海道。", note: "開始绝美跳島自駕。", map: "https://www.google.com/maps/search/?api=1&query=Shimanami+Kaido" },
-                { id: "4_2", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "首站前往大島，這座由隈研吾設計的無機調木質全景觀觀景台能 360 度俯瞰來島海峽大橋（此生必看絕景）。", note: "景色美到令人屏息。", map: "https://www.google.com/maps/search/?api=1&query=Kirosan+Observatory+Park",
-                  smokeLocation: "木造觀景台階梯上方禁菸。吸菸區位於山頂公共廁所與專用停車場中間的開闊草皮側。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Kirosan+Observatory+Parking" },
-                { id: "4_3", time: "11:00", type: "transport", spot: "島波海道跳島自駕與午餐", desc: "一路開車跨越伯方島、大三島、生口島。中午在島上休息站享用著名的檸檬拉麵或鮮魚海鮮丼。", note: "跨海橋樑費 SEP 已全包。今日車程較長，中途需加油預估 2,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Tatara+Shimanami+Park",
-                  smokeLocation: "大三島「道の駅 多多羅島波公園」大型遊覽車停車場與農特產中心後門皆設有海景吸菸亭。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Tatara+Shimanami+Park+Rest+Area" },
-                { id: "4_4", time: "13:30", type: "transport", spot: "拉車前往廣島市區", desc: "下島波海道後，經由尾道走山陽自動車道直奔廣島市區（車程約 1.5 小時）。", note: "注意速限安全行駛。", map: "https://www.google.com/maps/search/?api=1&query=Hiroshima+City" },
-                { id: "4_5", time: "15:00", type: "scenic", spot: "廣島城 (護國神社)", desc: "地址：廣島県廣島市中区基町21-1。陽光灑在黑色的木造天守閣上非常美麗，圍牆與護城河畔散步極具風味，在外圍拍照非常出片，March 也很好停。", note: "傍晚朝聖黑之廣島城外圍夕陽。", map: "https://www.google.com/maps/search/?api=1&query=Hiroshima+Castle",
-                  smokeLocation: "平和公園與廣島城內全域禁菸。吸菸需至公園外圍、或廣島城護城河入口旁的公廁旁定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Hiroshima+Castle+Restroom" },
-                { id: "4_6", time: "16:00", type: "hotel", spot: "廣島全日空皇冠假日飯店 入住", desc: "地址：廣島県廣島市中区中町7-20。放好行李、稍微休息。", note: "飯店 1 樓大廳後方、及宴會廳樓層備有專用密閉空調吸菸室。", map: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Hiroshima",
-                  smokeLocation: "飯店館內設有專用密閉吸菸室，客房內均禁菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Hiroshima+Smoking+Room" },
-                { id: "4_7", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島 購物", desc: "步行至廣島最熱鬧的本通商店街，並前往新開幕的 Minamoa 廣島百貨大逛特逛，朝聖【AKOMEYA TOKYO】尋找精緻日式雜貨、米食與生活好物。", note: "晚餐順便尋找廣島在地小吃或居酒屋。今日雙人預估花費（油資+晚餐）共 11,500 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Minamoa+Hiroshima",
-                  smokeLocation: "本通商圈路面禁菸。新開商場「Minamoa 廣島」高樓層餐廳街角落設有指定電子菸/紙菸吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Minamoa+Hiroshima+Restaurant+Floor" }
+                { id: "4_1", time: "08:30", type: "transport", spot: "退房出發 ➔ 進入島波海道", desc: "開車北上至今治市，準備進入世界級自行車聖地公路島波海道。", note: "開始绝美跳島自駕。", map: "https://www.google.com/maps/search/?api=1&query=今治+しまなみ海道" },
+                { id: "4_2", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "首站前往大島，這座由隈研吾設計的無機調木質全景觀觀景台能 360 度俯瞰來島海峽大橋（此生必看絕景）。", note: "景色美到令人屏息。", map: "https://www.google.com/maps/search/?api=1&query=亀老山展望公園",
+                  smokeLocation: "木造觀景台階梯上方禁菸。吸菸區位於山頂公共廁所與專用停車場中間的開闊草皮側。", smokeMap: "https://www.google.com/maps/search/?api=1&query=亀老山展望公園+駐車場" },
+                { id: "4_3", time: "11:00", type: "transport", spot: "島波海道跳島自駕與午餐", desc: "一路開車跨越伯方島、大三島、生口島。中午在島上休息站享用著名的檸檬拉麵或鮮魚海鮮丼。", note: "跨海橋樑費 SEP 已全包。今日車程較長，中途需加油預估 2,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=道の駅+多々羅しまなみ公園",
+                  smokeLocation: "大三島「道の駅 多多羅島波公園」大型遊覽車停車場與農特產中心後門皆設有海景吸菸亭。", smokeMap: "https://www.google.com/maps/search/?api=1&query=道の駅+多々羅しまなみ公園+喫煙所" },
+                { id: "4_4", time: "13:30", type: "transport", spot: "拉車前往廣島市區", desc: "下島波海道後，經由尾道走山陽自動車道直奔廣島市區（車程約 1.5 小時）。", note: "注意速限安全行駛。", map: "https://www.google.com/maps/search/?api=1&query=広島駅" },
+                { id: "4_5", time: "15:00", type: "scenic", spot: "廣島城 (護國神社)", desc: "地址：廣島県廣島市中区基町21-1。陽光灑在黑色的木造天守閣上非常美麗，圍牆與護城河畔散步極具風味，在外圍拍照非常出片，March 也很好停。", note: "傍晚朝聖黑之廣島城外圍夕陽。", map: "https://www.google.com/maps/search/?api=1&query=広島城",
+                  smokeLocation: "平和公園與廣島城內全域禁菸。吸菸需至公園外圍、或廣島城護城河入口旁的公廁旁定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=広島城+公衆トイレ" },
+                { id: "4_6", time: "16:00", type: "hotel", spot: "廣島全日空皇冠假日飯店 入住", desc: "地址：廣島県廣島市中区中町7-20。放好行李、稍微休息。", note: "飯店 1 樓大廳後方、及宴會廳樓層備有專用密閉空調吸菸室。", map: "https://www.google.com/maps/search/?api=1&query=ANA+クラウンプラザホテル広島",
+                  smokeLocation: "飯店館內設有專用密閉吸菸室，客房內均禁菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ANA+クラウンプラザホテル広島+喫煙室" },
+                { id: "4_7", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島 購物", desc: "步行至廣島最熱鬧的本通商店街，並前往新開幕的 Minamoa 廣島百貨大逛特逛，朝聖【AKOMEYA TOKYO】尋找精緻日式雜貨、米食與生活好物。", note: "晚餐順便尋找廣島在地小吃或居酒屋。今日雙人預估花費（油資+晚餐）共 11,500 日圓。", map: "https://www.google.com/maps/search/?api=1&query=広島+本通商店街",
+                  smokeLocation: "本通商圈路面禁菸。新開商場「Minamoa 廣島」高樓層餐廳街角落設有指定電子菸/紙菸吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ミナモア広島" }
             ]},
             5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島歷史巡禮 ➔ 宮島海上鳥居", focus: "歷史和平巡禮、震撼的 1:10 大和號戰艦模型、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "大和博物館戶外靠港口公園側設有指定集菸桶。宮島全島嚴格禁菸以保護神鹿與古蹟，但在「宮島棧橋（渡輪站）出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
-                { id: "5_1", time: "08:30", type: "scenic", spot: "原子彈爆炸圓頂屋 (平和紀念公園)", desc: "從飯店出發，步行或開車前往鄰近的原子彈爆炸圓頂屋，靜靜感受歷史的重量與和平的珍貴。", note: "散步感受早晨氛圍。", map: "https://www.google.com/maps/search/?api=1&query=Atomic+Bomb+Dome" },
-                { id: "5_2", time: "09:30", type: "transport", spot: "開車前往吳市", desc: "經由廣島高速道路前往軍港之城——吳市（車程約 45 分鐘，走高架高速，SEP 涵蓋免驚）。", note: "車程流暢。", map: "https://www.google.com/maps/search/?api=1&query=Kure+City" },
-                { id: "5_3", time: "10:15", type: "scenic", spot: "大和博物館", desc: "地址：廣島県呉市宝町5-20。館內最震撼的就是那座全長 26.3 公尺、依照 1:10 比例精準重現的「大和號戰艦」模型！對面巨大的「海上自衛隊吳史料館」鐵鯨魚潛水艇外觀也是必拍打卡點。", note: "雙人門票 1,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Yamato+Museum",
-                  smokeLocation: "大和博物館戶外靠港口公園側設有指定集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Yamato+Museum+Park" },
-                { id: "5_4", time: "12:15", type: "food", spot: "吳市港口午餐 ➔ 前往宮島口", desc: "在吳市港口附近享用著名的「吳海自咖哩（海自カレー）」或海鮮料理，隨後開車前往宮島口（車程約 50 分鐘）。", note: "13:15抵達，將 March 停在宮島口收費停車場（停車費約 1,000 日圓）。", map: "https://www.google.com/maps/search/?api=1&query=Miyajimaguchi+Station" },
-                { id: "5_5", time: "13:30", type: "transport", spot: "搭乘 JR 西日本宮島渡輪", desc: "搭乘渡輪前往宮島。雙人來回船票與宮島訪問稅約 600 日圓。", note: "渡輪航程約 15 分鐘。宮島口渡輪新航廈一樓外側、靠近 JR 碼頭左側設有戶外定點圍欄吸菸區。", map: "https://www.google.com/maps/search/?api=1&query=JR+West+Miyajima+Ferry",
-                  smokeLocation: "宮島口渡輪新航廈一樓外側、靠近 JR 碼頭左側設有戶外定點圍欄吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Miyajimaguchi+Ferry+Terminal" },
-                { id: "5_6", time: "13:45", type: "scenic", spot: "宮島大探險與嚴島神社滿潮", desc: "完美目睹朱紅色大鳥居與嚴島神社宛如漂浮在湛藍瀨戶內海上的神聖滿潮絕景！並在表參道商店街大啖現烤生牡蠣、紅葉饅頭。", note: "可以一路悠閒探索至 17:40 滿潮段。", map: "https://www.google.com/maps/search/?api=1&query=Itsukushima+Shrine",
-                  smokeLocation: "全島世界遺產禁菸。唯一合法室外公眾吸菸室位於「宮島棧橋 (渡輪站)」出站右側的密閉涼亭內、以及主要商店街後方巷弄。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Miyajima+Pier+Smoking+Area" },
-                { id: "5_7", time: "17:40", type: "transport", spot: "搭船返程 ➔ 開車回廣島", desc: "搭船返回宮島口，取車開回廣島市區（車程約 40 分鐘）。", note: "小心開車。", map: "https://www.google.com/maps/search/?api=1&query=Miyajimaguchi+Ferry" },
-                { id: "5_8", time: "19:00", type: "food", spot: "廣島燒名店晚餐 (鐵太/電光石火)", desc: "安排去廣島燒名店，觀看師傅在鐵板上層層堆疊高麗菜、五花肉與炒麵的精湛手藝，大口滿足。", note: "豪華牡蠣大餐與廣島燒晚餐今日預估花費 14,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Okonomiyaki+Teitta+Hiroshima",
-                  smokeLocation: "店內客席皆禁菸，但店門外或所在美食大樓（如廣島駅 Full Focus 大樓）同層備有公共吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Full+Focus+Building+Hiroshima" }
+                { id: "5_1", time: "08:30", type: "scenic", spot: "原子彈爆炸圓頂屋 (平和紀念公園)", desc: "從飯店出發，步行或開車前往鄰近的原子彈爆炸圓頂屋，靜靜感受歷史的重量與和平的珍貴。", note: "散步感受早晨氛圍。", map: "https://www.google.com/maps/search/?api=1&query=原爆ドーム" },
+                { id: "5_2", time: "09:30", type: "transport", spot: "開車前往吳市", desc: "經由廣島高速道路前往軍港之城——吳市（車程約 45 分鐘，走高架高速，SEP 涵蓋免驚）。", note: "車程流暢。", map: "https://www.google.com/maps/search/?api=1&query=呉市役所" },
+                { id: "5_3", time: "10:15", type: "scenic", spot: "大和博物館", desc: "地址：廣島県呉市宝町5-20。館內最震撼的就是那座全長 26.3 公尺、依照 1:10 比例精準重現的「大和號戰艦」模型！對面巨大的「海上自衛隊吳史料館」鐵鯨魚潛水艇外觀也是必拍打卡點。", note: "雙人門票 1,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=大和ミュージアム",
+                  smokeLocation: "大和博物館戶外靠港口公園側設有指定集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=大和ミュージアム+屋外" },
+                { id: "5_4", time: "12:15", type: "food", spot: "吳市港口午餐 ➔ 前往宮島口", desc: "在吳市港口附近享用著名的「吳海自咖哩（海自カレー）」或海鮮料理，隨後開車前往宮島口（車程約 50 分鐘）。", note: "13:15抵達，將 March 停在宮島口收費停車場（停車費約 1,000 日圓）。", map: "https://www.google.com/maps/search/?api=1&query=宮島口駅" },
+                { id: "5_5", time: "13:30", type: "transport", spot: "搭乘 JR 西日本宮島渡輪", desc: "搭乘渡輪前往宮島. 雙人來回船票與宮島訪問稅約 600 日圓。", note: "渡輪航程約 15 分鐘。宮島口渡輪新航廈一樓外側、靠近 JR 碼頭左側設有戶外定點圍欄吸菸區。", map: "https://www.google.com/maps/search/?api=1&query=宮島口+フェリー乗りば",
+                  smokeLocation: "宮島口渡輪新航廈一樓外側、靠近 JR 碼頭左側設有戶外定點圍欄吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=宮島口旅客ターミナル+喫煙所" },
+                { id: "5_6", time: "13:45", type: "scenic", spot: "宮島大探險與嚴島神社滿潮", desc: "完美目睹朱紅色大鳥居與嚴島神社宛如漂浮在湛藍瀨戶內海上的神聖滿潮絕景！並在表參道商店街大啖現烤生牡蠣、紅葉饅頭。", note: "可以一路悠閒探索至 17:40 滿潮段。", map: "https://www.google.com/maps/search/?api=1&query=厳島神社+大鳥居",
+                  smokeLocation: "全島世界遺產禁菸。唯一合法室外公眾吸菸室位於「宮島棧橋 (渡輪站)」出站右側的密閉涼亭內、以及主要商店街後方巷弄。", smokeMap: "https://www.google.com/maps/search/?api=1&query=宮島棧橋+喫煙所" },
+                { id: "5_7", time: "17:40", type: "transport", spot: "搭船返程 ➔ 開車回廣島", desc: "搭船返回宮島口，取車開回廣島市區（車程約 40 分鐘）。", note: "小心開車。", map: "https://www.google.com/maps/search/?api=1&query=宮島口" },
+                { id: "5_8", time: "19:00", type: "food", spot: "廣島燒名店晚餐 (鐵太/電光石火)", desc: "安排去廣島燒名店，觀看師傅在鐵板上層層堆疊高麗菜、五花肉與炒麵的精湛手藝，大口滿足。", note: "豪華牡蠣大餐與廣島燒晚餐今日預估花費 14,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=広島お好み物語+駅前ひろば",
+                  smokeLocation: "店內客席皆禁菸，但店門外或所在美食大樓（如廣島駅 Full Focus 大樓）同層備有公共吸菸室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=フルフォーカスビル+喫煙所" }
             ]},
             6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城 ➔ 宿：鞆之浦海景", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，但部分的開闊停車場設有集菸桶。", items: [
-                { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳記得到一碗經典的背脂「尾道拉麵」當午餐。", map: "https://www.google.com/maps/search/?api=1&query=Senkoji+Park",
-                  smokeLocation: "千光寺山頂纜車站觀景台下方的公共廁所旁、以及山腳纜車搭乘處入口左側設有煙灰箱。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Senkoji+Ropeway+Station" },
-                { id: "6_2", time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪奇蹟般建在斷崖絕壁上的朱紅色觀音寺廟。", note: "雙人門門票 400 日圓，海水擊打礁石的畫面極度震撼。", map: "https://www.google.com/maps/search/?api=1&query=Abuto+Kannon",
-                  smokeLocation: "古蹟木造廟宇區域內嚴禁任何火源。吸菸必須在下方入口售票處旁的碎石停車場定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Abuto+Kannon+Parking" },
-                { id: "6_3", time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 包棟老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步。", note: "這裏是宮崎駿「崖上的波妞」靈感發源地，極具江戶港町風情，晚餐吃鯛魚料理。", map: "https://www.google.com/maps/search/?api=1&query=Tomonoura+Joyato+Lighthouse",
-                  smokeLocation: "歷史保護區巷弄全面禁菸。常夜燈周邊無菸灰缸，需至主要巴士接駁站「鞆港」站牌旁或便利商店。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Tomoko+Bus+Stop" }
+                { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳記得到一碗經典的背脂「尾道拉麵」當午餐。", map: "https://www.google.com/maps/search/?api=1&query=千光寺公園",
+                  smokeLocation: "千光寺山頂纜車站觀景台下方的公共廁所旁、以及山腳纜車搭乘處入口左側設有煙灰箱。", smokeMap: "https://www.google.com/maps/search/?api=1&query=千光寺山ロープウェイ+山頂駅" },
+                { id: "6_2", time: "14:00", type: "scenic", spot: "阿伏兎觀音", desc: "造訪奇蹟般建在斷崖絕壁上的朱紅色觀音寺廟。", note: "雙人門門票 400 日圓，海水擊打礁石的畫面極度震撼。", map: "https://www.google.com/maps/search/?api=1&query=阿伏兎観音",
+                  smokeLocation: "古蹟木造廟宇區域內嚴禁任何火源。吸菸必須在下方入口售票處旁的碎石停車場定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=阿伏兎観音+駐車場" },
+                { id: "6_3", time: "16:00", type: "hotel", spot: "鞆之浦 Airbnb 包棟老屋", desc: "辦理入住，傍晚在夕陽下的港泰常夜燈散步。", note: "這裏是宮崎駿「崖上的波妞」靈感發源地，極具江戶港町風情，晚餐吃鯛魚料理。", map: "https://www.google.com/maps/search/?api=1&query=鞆の浦+常夜燈",
+                  smokeLocation: "歷史保護區巷弄全面禁菸。常夜燈周邊無菸灰缸，需至主要巴士接駁站「鞆港」站牌旁或便利商店。", smokeMap: "https://www.google.com/maps/search/?api=1&query=鞆の浦+鞆港バス停" }
             ]},
             7: { date: "6/19 (五)", weather: "☀️ 晴 26°C", title: "鞆之浦 ➔ 倉敷美觀 ➔ 岡山購物", focus: "經典對潮樓窗景、白壁柳樹的倉敷水鄉、入住岡山站前便利飯店、AEON 瘋狂採購與釣具店特搜。", smoking: "倉敷美觀地區中央公廁旁、以及大型收費停車場周邊有指定吸菸區。APA飯店內設有專用吸菸室，岡山車站西口與 AEON MALL 內亦有吸菸室。", items: [
-                { id: "7_1", time: "09:00", type: "scenic", spot: "福禪寺 对潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。", note: "雙人門票 400 日圓，窗框望出去就像一幅精緻的浮世繪山水畫。", map: "https://www.google.com/maps/search/?api=1&query=Fukuzenji+Taichorou",
-                  smokeLocation: "寺廟與榻榻米大殿絕對禁菸。開車至此可於福禪寺山腳下的港口公共空地定點解決。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Tomonoura+Port+Area" },
-                { id: "7_2", time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "漫遊水鄉，下午沿著倉敷川散步。有非常多充滿設計感的文具與紙膠帶小店。", note: "中午吃倉敷名物 Kappa 炸豬排。10:30從對潮樓退房開車過來約1小時。", map: "https://www.google.com/maps/search/?api=1&query=Kurashiki+Bikan+Historical+Quarter",
-                  smokeLocation: "美觀白壁老街區禁菸。合法吸菸區位於「倉敷美觀地區中央公眾廁所」後方的專屬吸菸小木屋與大型收費停車場周邊。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Kurashiki+Bikan+Central+Restroom" },
-                { id: "7_3", time: "15:30", type: "shopping", spot: "Point 釣具店 (岡山西バイパス店)", desc: "店名：釣具のポイント 岡山西バイパス店。開車離開倉敷後前往，特搜專屬的釣具與路亞配件！", note: "顥璋的驚喜特搜店！", map: "https://www.google.com/maps/search/?api=1&query=釣具のポイント+岡山西バイパス店",
-                  smokeLocation: "店外開闊停車場角落通常設有店鋪專用集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Point+Okanyama+Nishi+Bypass" },
-                { id: "7_4", time: "17:30", type: "hotel", spot: "APA 飯店 岡山站前店 入住", desc: "地址：岡山県岡山市北区下石井1丁目3-12。辦理入住與停放車輛。飯店與倉敷停車費約 1,500-2,000 日圓。", note: "全客房禁菸。1 樓公用區域通道旁設有密閉電子鎖吸菸室，可自由進入。", map: "https://www.google.com/maps/search/?api=1&query=APA+Hotel+Okayama+Ekimae",
-                  smokeLocation: "飯店內有專用吸菸室（或可於預訂時選擇吸菸房型）。", smokeMap: "https://www.google.com/maps/search/?api=1&query=APA+Hotel+Okayama+Ekimae+1F" },
-                { id: "7_5", time: "19:00", type: "shopping", spot: "岡山車站地下街 & AEON MALL 岡山", desc: "晚上直接開啟瘋狂購物模式！步行前往與車站相連的巨大商場。晚餐在 AEON 內安排享用高級岡山備前黑牛燒肉或千屋牛。", note: "今日總花費（門票/停車+豬排與燒肉晚餐）共 15,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=AEON+Mall+Okayama",
-                  smokeLocation: "AEON 商場 4 樓與 7 樓餐廳街的男女洗手間通道深處，及岡山車站西口皆設有乾淨的吸菸專用室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=AEON+Mall+Okayama+7F" }
+                { id: "7_1", time: "09:00", type: "scenic", spot: "福禪寺 对潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。", note: "雙人門票 400 日圓，窗框望出去就像一幅精緻的浮世繪山水畫。", map: "https://www.google.com/maps/search/?api=1&query=福禅寺+対潮楼",
+                  smokeLocation: "寺廟與榻榻米大殿絕對禁菸。開車至此可於福禪寺山腳下的港口公共空地定點解決。", smokeMap: "https://www.google.com/maps/search/?api=1&query=福禅寺+対潮楼+周辺" },
+                { id: "7_2", time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "漫遊水鄉，下午沿著倉敷川散步。有非常多充滿設計感的文具與紙膠帶小店。", note: "中午吃倉敷名物 Kappa 炸豬排。10:30從對潮樓退房開車過來約1小時。", map: "https://www.google.com/maps/search/?api=1&query=倉敷美観地区",
+                  smokeLocation: "美觀白壁老街區禁菸。合法吸菸區位於「倉敷美觀地區中央公眾廁所」後方的專屬吸菸小木屋與大型收費停車場周邊。", smokeMap: "https://www.google.com/maps/search/?api=1&query=倉敷美観地区+中央公衆トイレ+喫煙所" },
+                { id: "7_3", time: "15:30", type: "shopping", spot: "釣具のポイント 岡山西バイパス店", desc: "店名：釣具のポイント 岡山西バイパス店。開車離開倉敷後前往，特搜專屬的釣具與路亞配件！", note: "顥璋的驚喜特搜店！", map: "https://www.google.com/maps/search/?api=1&query=釣具のポイント+岡山西バイパス店",
+                  smokeLocation: "店外開闊停車場角落通常設有店鋪專用集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=釣具のポイント+岡山西バイパス店+駐車場" },
+                { id: "7_4", time: "17:30", type: "hotel", spot: "APA 飯店 岡山站前店 入住", desc: "地址：岡山県岡山市北区下石井1丁目3-12。辦理入住與停放車輛。飯店與倉敷停車費約 1,500-2,000 日圓。", note: "全客房禁菸。1 樓公用區域通道旁設有密閉電子鎖吸菸室，可自由進入。", map: "https://www.google.com/maps/search/?api=1&query=APAホテル+岡山駅前",
+                  smokeLocation: "飯店內有專用吸菸室（或可於預訂時選擇吸菸房型）。", smokeMap: "https://www.google.com/maps/search/?api=1&query=APAホテル+岡山駅前+喫煙室" },
+                { id: "7_5", time: "19:00", type: "shopping", spot: "岡山車站地下街 & AEON MALL 岡山", desc: "晚上直接開啟瘋狂購物模式！步行前往與車站相連的巨大商場。晚餐在 AEON 內安排享用高級岡山備前黑牛燒肉或千屋牛。", note: "今日總花費（門票/停車+豬排與燒肉晚餐）共 15,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=イオンモール岡山",
+                  smokeLocation: "AEON 商場 4 樓與 7 樓餐廳街的男女洗手間通道深處，及岡山車站西口皆設有乾淨的吸菸專用室。", smokeMap: "https://www.google.com/maps/search/?api=1&query=イオンモール岡山+喫煙室" }
             ]},
             8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於汽車旅館型態，客房寬敞且皆提供非常友善的吸菸環境。", items: [
-                { id: "8_1", time: "09:00", type: "scenic", spot: "岡山後樂園 & 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。", note: "共通券雙人 1,280 日圓。可以過橋一起悠閒散步。", map: "https://www.google.com/maps/search/?api=1&query=Okayama+Korakuen",
-                  smokeLocation: "後樂園正門外售票廣場旁、以及岡山城天守閣入口外的休憩木椅區設有定點吸菸槽。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Okayama+Korakuen+Main+Gate" },
-                { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://www.google.com/maps/search/?api=1&query=Yoshima+Parking+Area",
-                  smokeLocation: "與島 PA 高速公路服務區觀景台下方的露天咖啡座旁，設有極具瀨戶內海無敵海景的戶外吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Yoshima+PA+Observatory" },
-                { id: "8_3", time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "若想看海景海豚表演可去四國水族館；若購物則主攻高松唐吉訶德伴手禮最後大採購。", note: "今天開車油資預估約 1,200 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Youme+Town+Takamatsu",
-                  smokeLocation: "Youme Town 綠色南館 2 樓手扶梯旁、唐吉訶德高松店正門左側戶外階梯下方設有集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Don+Quijote+Takamatsu" },
-                { id: "8_4", time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "地址：香川県高松市東山崎町224-1", note: "辦理入住稍作休息。晚上開車前往高松市區享用來香川必吃的「骨付鳥」慶功宴。", map: "https://www.google.com/maps/search/?api=1&query=Hotel+Vega+Takamatsu",
-                  smokeLocation: "該精品飯店/汽車旅館對煙友高度友善，客房內部皆備有精緻煙灰缸，可直接於房內舒適吸菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Hotel+Vega+Takamatsu" }
+                { id: "8_1", time: "09:00", type: "scenic", spot: "岡山後樂園 & 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。", note: "共通券雙人 1,280 日圓。可以過橋一起悠閒散步。", map: "https://www.google.com/maps/search/?api=1&query=岡山後楽園",
+                  smokeLocation: "後樂園正門外售票廣場旁、以及岡山城天守閣入口外的休憩木椅區設有定點吸菸槽。", smokeMap: "https://www.google.com/maps/search/?api=1&query=岡山後楽園+券売所" },
+                { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://www.google.com/maps/search/?api=1&query=与島パーキングエリア",
+                  smokeLocation: "與島 PA 高速公路服務區觀景台下方的露天咖啡座旁，設有極具瀨戶內海無敵海景的戶外吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=与島PA+展望台" },
+                { id: "8_3", time: "14:30", type: "shopping", spot: "Youme Town 高松 / 唐吉訶德", desc: "若想看海景海豚表演可去四國水族館；若購物則主攻高松唐吉訶德伴手禮最後大採購。", note: "今天開車油資預估約 1,200 日圓。", map: "https://www.google.com/maps/search/?api=1&query=ゆめタウン高松",
+                  smokeLocation: "Youme Town 綠色南館 2 樓手扶梯旁、唐吉訶德高松店正門左側戶外階梯下方設有集菸桶。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ドン・キホーテ+高松店" },
+                { id: "8_4", time: "16:30", type: "hotel", spot: "高松織女星飯店 (Hotel Vega)", desc: "地址：香川県高松市東山崎町224-1", note: "辦理入住稍作休息。晚上開車前往高松市區享用來香川必吃的「骨付鳥」慶功宴。", map: "https://www.google.com/maps/search/?api=1&query=ホテルベガ+高松",
+                  smokeLocation: "該精品飯店/汽車旅館對煙友高度友善，客房內部皆備有精緻煙灰缸，可直接於房內舒適吸菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ホテルベガ+高松" }
             ]},
             9: { date: "6/21 (日)", weather: "☀️ 晴 28°C", title: "金刀比羅宮 ➔ 天空鳥居 ➔ 還車歸國", focus: "挑戰 785 階一生必去神宮、極致天空之鳥居、還車完美歸國。", smoking: "金刀比羅宮參道沿途有多間商店設有吸菸點；高松機場入關前二樓及出關免稅店旁皆設有乾淨室內吸菸室。", items: [
-                { id: "9_1", time: "09:20", type: "scenic", spot: "金刀比羅宮挑戰", desc: "從織女星飯店開車只需 50 分鐘！步行登上 785 階到達本宮。", note: "參拜海上守護神，下山後在參道吃一碗現切讚岐烏龍麵當午餐。", map: "https://www.google.com/maps/search/?api=1&query=Kotohiragu+Shrine",
-                  smokeLocation: "參道第 365 階的「大門」入口旁、以及本宮右側手水舍後方的觀景休息區設有指定公共吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Kotohiragu+Daimon" },
-                { id: "9_2", time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝盛位於觀音寺市山頂的本宮。", note: "從巨大的石造鳥居向下俯瞰，市區與瀨戶內海的圓弧沙灘猶如人間仙境。", map: "https://www.google.com/maps/search/?api=1&query=Takaya+Shrine+Sky+Torii",
-                  smokeLocation: "山頂鳥居與神社神聖範圍嚴禁煙火。吸菸點位於山頂下方的碎石下車停車場洗空間外圍。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Takaya+Shrine+Parking" },
-                { id: "9_3", time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場旁的營業所加滿油完好還車。加滿油資約 3,500 日圓。", note: "還車後搭乘接駁車抵達航廈，辦理華航登機手續，在免稅店做最後補貨。", map: "https://www.google.com/maps/search/?api=1&query=NISSAN+Rent+A+Car+Takamatsu+Airport",
-                  smokeLocation: "NISSAN 營業所門口客戶休息區旁備有吸菸桶，入航廈前可在這作歸國前的最後衝刺。", smokeMap: "https://www.google.com/maps/search/?api=1&query=NISSAN+Rent+A+Car+Takamatsu+Airport" },
-                { id: "9_4", time: "19:05", type: "transport", spot: "中華航空 CI179 班機", desc: "起飛返回台北，結束九天山陽四國的甜蜜手帳自駕回憶！", note: "高松機場入關前後皆有非常乾淨的室內吸菸室，登機前 顥璋 可以舒適巡禮。", map: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport+International+Departure",
-                  smokeLocation: "出境審查後，免稅店後方的登機大廳 2 樓設有密閉負壓室內吸菸室，可一路抽到登機前最後一刻。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport+Duty+Free+Area" }
+                { id: "9_1", time: "09:20", type: "scenic", spot: "金刀比羅宮挑戰", desc: "從織女星飯店開車只需 50 分鐘！步行登上 785 階到達本宮。", note: "參拜海上守護神，下山後在參道吃一碗現切讚岐烏龍麵當午餐。", map: "https://www.google.com/maps/search/?api=1&query=金刀比羅宮",
+                  smokeLocation: "參道第 365 階的「大門」入口旁、以及本宮右側手水舍後方的觀景休息區設有指定公共吸菸區。", smokeMap: "https://www.google.com/maps/search/?api=1&query=金刀比羅宮+大門" },
+                { id: "9_2", time: "13:15", type: "scenic", spot: "高屋神社 (天空之鳥居)", desc: "朝盛位於觀音寺市山頂的本宮。", note: "從巨大的石造鳥居向下俯瞰，市區與瀨戶內海的圓弧沙灘猶如人間仙境。", map: "https://www.google.com/maps/search/?api=1&query=高屋神社+本宮+天空の鳥居",
+                  smokeLocation: "山頂鳥居與神社神聖範圍嚴禁煙火。吸菸點位於山頂下方的碎石下車停車場洗空間外圍。", smokeMap: "https://www.google.com/maps/search/?api=1&query=高屋神社+下宮+駐車場" },
+                { id: "9_3", time: "16:00", type: "transport", spot: "高松機場 NISSAN 還車", desc: "回到機場旁的營業所加滿油完好還車。加滿油資約 3,500 日圓。", note: "還車後搭乘接駁車抵達航廈，辦理華航登機手續，在免稅店做最後補貨。", map: "https://www.google.com/maps/search/?api=1&query=日産レンタカー+高松空港店",
+                  smokeLocation: "NISSAN 營業所門口客戶休息區旁備有吸菸桶，入航廈前可在這作歸國前的最後衝刺。", smokeMap: "https://www.google.com/maps/search/?api=1&query=日産レンタカー+高松空港店" },
+                { id: "9_4", time: "19:05", type: "transport", spot: "中華航空 CI179 班機", desc: "起飛返回台北，結束九天山陽四國的甜蜜手帳自駕回憶！", note: "高松機場入關前後皆有非常乾淨的室內吸菸室，登機前 顥璋 可以舒適巡禮。", map: "https://www.google.com/maps/search/?api=1&query=高松空港+国際線ターミナル",
+                  smokeLocation: "出境審查後，免稅店後方的登機大廳 2 樓設有密閉負壓室內吸菸室，可一路抽到登機前最後一刻。", smokeMap: "https://www.google.com/maps/search/?api=1&query=高松空港+国際線+搭乗待合室+喫煙室" }
             ]}
         };
 
@@ -421,474 +322,4 @@ syncExchangeRate();
             if (tabName === 'schedule') renderSchedule();
             else if (tabName === 'bookings') renderBookings();
             else if (tabName === 'expense') renderExpense();
-            else if (tabName === 'planning') renderPlanning();
-            else if (tabName === 'members') renderMembers();
-        }
-
-        // --- MODULE 1: SCHEDULE & MODAL DETAILS ---
-        function renderSchedule() {
-            const data = mainItinerary[selectedDay];
-            const container = document.getElementById('appBody');
-            if(!container) return;
-            
-            let timelineHtml = '';
-            data.items.forEach(item => {
-                const meta = categoryMeta[item.type];
-                const hasPhoto = spotPhotos[item.id] ? '📸 ' : '';
-                timelineHtml += `
-                    <div onclick="openDetailModal('${item.id}', ${selectedDay})" class="flex gap-4 relative pb-6 last:pb-0 cursor-pointer group">
-                        <div class="w-10 flex-shrink-0 flex flex-col items-center">
-                            <span class="text-xs font-mono font-bold text-[#688B9A]">${item.time || '--:--'}</span>
-                            <div class="w-2.5 h-2.5 rounded-full ${meta.dot} mt-2 shadow-sm z-10 group-hover:scale-125 transition-all"></div>
-                        </div>
-                        <div class="flex-grow bg-white border-2 border-[#E6DFD1] rounded-2xl p-3 shadow-sm hover:shadow-md transition-all active:scale-98">
-                            <div class="flex justify-between items-center mb-1.5">
-                                <span class="text-xs font-bold text-gray-900">${hasPhoto}${item.spot}</span>
-                                <span class="${meta.bg} ${meta.text} text-[9px] font-bold px-2 py-0.5 rounded-full border border-black/5">${meta.label}</span>
-                            </div>
-                            <p class="text-[11px] text-gray-500 line-clamp-1">${item.desc}</p>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = `
-                <div class="diary-card p-4 mb-4 bg-white">
-                    <div class="flex justify-between items-center mb-2">
-                        <h2 class="text-sm font-bold text-[#2D5137]">✨ Day ${selectedDay} • 行程手札</h2>
-                        <span class="bg-[#F4F1EA] border border-[#D9D2C2] text-xs px-2.5 py-0.5 rounded-full font-medium text-gray-700">${data.weather}</span>
-                    </div>
-                    <p class="text-xs text-gray-800 font-medium bg-[#EBF3F5] border border-[#B2CCD4] p-2 rounded-xl leading-relaxed">
-                        📌 <span class="font-bold">今日焦點：</span>${data.focus}
-                    </p>
-                </div>
-                <div class="diary-card p-4 mb-4 bg-white relative timeline-line">
-                    <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4"><i class="fa-solid fa-hand-pointer mr-1.5 text-emerald-600 animate-pulse"></i>點擊行程查看備註與精確吸菸點</h3>
-                    <div class="space-y-1">${timelineHtml}</div>
-                </div>
-                <div class="bg-[#FCF9F2] border-2 border-dashed border-[#D1C7BD] rounded-2xl p-3.5 shadow-sm">
-                    <h4 class="text-xs font-bold text-[#A67C52] mb-1 flex items-center gap-1.5"><i class="fa-solid fa-smoking text-amber-700 text-xs"></i> 💡 隨行吸菸環境總覽</h4>
-                    <p class="text-[11px] text-[#8C6D4F] leading-relaxed">${data.smoking}</p>
-                </div>
-            `;
-        }
-
-        function openDetailModal(itemId, dayNum) {
-            const item = mainItinerary[dayNum].items.find(i => i.id === itemId);
-            if (!item) return;
-            
-            const meta = categoryMeta[item.type];
-            const photoSrc = spotPhotos[itemId] || '';
-            const photoHtml = photoSrc 
-                ? `<img src="${photoSrc}" class="w-full h-36 object-cover rounded-xl border-2 border-[#E6DFD1] mt-3 shadow-inner">` 
-                : `<div class="border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl p-4 mt-3 text-center text-gray-400 text-xs">📸 本地手帳此景點尚無照片</div>`;
-
-            let smokeSectionHtml = '';
-            if (item.smokeLocation) {
-                smokeSectionHtml = `
-                    <div class="mt-2.5 bg-[#F5EFE6] border border-[#DDD3C4] p-3 rounded-xl relative">
-                        <div class="flex justify-between items-start">
-                            <p class="text-[11px] text-amber-900 leading-relaxed pr-8">
-                                <span class="font-bold text-amber-800"><i class="fa-solid fa-smoking mr-1"></i>煙友特製手帳貼紙：</span>
-                                ${item.smokeLocation}
-                            </p>
-                            <a href="${item.smokeMap || '#'}" target="_blank" class="absolute top-2.5 right-2.5 bg-[#4A7C59] text-white w-6 h-6 rounded-full flex items-center justify-center shadow-md active:scale-90 transition-all" title="點擊導航至吸菸點">
-                                <i class="fa-solid fa-map-location-dot text-[10px]"></i>
-                            </a>
-                        </div>
-                    </div>
-                `;
-            }
-
-            document.getElementById('modalContent').innerHTML = `
-                <div class="flex items-center gap-2 mb-2">
-                    <span class="${meta.bg} ${meta.text} text-xs font-bold px-2.5 py-0.5 rounded-full border border-black/5">${meta.label}</span>
-                    <span class="text-xs font-mono font-bold text-gray-400">${item.time || ''}</span>
-                </div>
-                <h3 class="text-base font-bold text-gray-950 mb-2">${item.spot}</h3>
-                <p class="text-xs text-gray-600 bg-gray-50 p-2.5 rounded-xl border border-gray-100 leading-relaxed">${item.desc}</p>
-                
-                <div class="mt-3 bg-[#FAF7F0] border border-[#E6DFD1] p-3 rounded-xl">
-                    <p class="text-[11px] text-[#8C6D4F] leading-relaxed"><span class="font-bold text-[#A67C52]"><i class="fa-solid fa-pencil mr-1"></i>備註小貼紙：</span>${item.note || '無詳細備註'}</p>
-                </div>
-
-                ${smokeSectionHtml}
-                ${photoHtml}
-
-                <div class="grid grid-cols-2 gap-2 mt-4">
-                    <a href="${item.map || '#'}" target="_blank" class="diary-btn-amber text-center py-2 text-xs font-bold block active:scale-95 transition-all"><i class="fa-solid fa-map-pin mr-1"></i>景點導航</a>
-                    <label class="diary-btn-blue text-center py-2 text-xs font-bold block cursor-pointer active:scale-95 transition-all">
-                        <i class="fa-solid fa-camera mr-1"></i>上傳手帳照
-                        <input type="file" accept="image/*" class="hidden" onchange="compressAndSaveSpotPhoto(event, '${itemId}')">
-                    </label>
-                </div>
-            `;
-            document.getElementById('detailModal').classList.remove('hidden');
-        }
-
-        function closeDetailModal() {
-            document.getElementById('detailModal').classList.add('hidden');
-        }
-
-        function compressAndSaveSpotPhoto(event, itemId) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader(); reader.readAsDataURL(file);
-            reader.onload = function (e) {
-                const img = new Image(); img.src = e.target.result;
-                img.onload = function () {
-                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const maxW = 400; const scale = maxW / img.width;
-                    canvas.width = maxW; canvas.height = img.height * scale;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    spotPhotos[itemId] = compressedUrl;
-                    localStorage.setItem('spot_photos', JSON.stringify(spotPhotos));
-                    
-                    closeDetailModal(); renderSchedule();
-                };
-            };
-        }
-
-        // --- MODULE 2: BOOKINGS ---
-        function renderBookings() {
-            const container = document.getElementById('appBody');
-            if(!container) return;
-            container.innerHTML = `
-                <div class="diary-card overflow-hidden bg-white mb-4 relative">
-                    <div class="bg-[#4A7C59] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
-                        <span>✈️ OUTBOUND PASS / 華航去程</span>
-                        <span class="font-mono">CI 178</span>
-                    </div>
-                    <div class="p-4 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TPE</p>
-                            <p class="text-[10px] font-bold text-emerald-700">桃園機場 T2</p>
-                            <p class="text-[11px] font-mono text-gray-500 mt-1 font-bold">🛫 14:15</p>
-                            <p class="text-[9px] text-gray-400">起飛時間</p>
-                        </div>
-                        <div class="flex flex-col items-center justify-center px-1">
-                            <p class="text-[9px] font-mono text-[#4A7C59] font-bold">2026.06.13</p>
-                            <div class="w-full h-[1.5px] bg-gray-200 relative my-1">
-                                <i class="fa-solid fa-plane text-[10px] text-[#4A7C59] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i>
-                            </div>
-                            <p class="text-[9px] text-gray-400 font-medium">預計航程 2h 50m</p>
-                        </div>
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TAK</p>
-                            <p class="text-[10px] font-bold text-emerald-700">高松機場 T1</p>
-                            <p class="text-[11px] font-mono text-gray-500 mt-1 font-bold">🛬 18:05</p>
-                            <p class="text-[9px] text-gray-400">抵達時間</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="diary-card overflow-hidden bg-white mb-4 relative">
-                    <div class="bg-[#688B9A] text-white px-4 py-1.5 text-[10px] font-bold flex justify-between items-center border-b-2 border-dashed border-white/30">
-                        <span>✈️ INBOUND PASS / 華航回程</span>
-                        <span class="font-mono">CI 179</span>
-                    </div>
-                    <div class="p-4 grid grid-cols-3 items-center text-center bg-gradient-to-b from-white to-[#F9F8F6]">
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TAK</p>
-                            <p class="text-[10px] font-bold text-sky-800">高松機場 T1</p>
-                            <p class="text-[11px] font-mono text-gray-500 mt-1 font-bold">🛫 19:05</p>
-                            <p class="text-[9px] text-gray-400">起飛時間</p>
-                        </div>
-                        <div class="flex flex-col items-center justify-center px-1">
-                            <p class="text-[9px] font-mono text-[#688B9A] font-bold">2026.06.21</p>
-                            <div class="w-full h-[1.5px] bg-gray-200 relative my-1">
-                                <i class="fa-solid fa-plane text-[10px] text-[#688B9A] absolute -top-1 left-1/2 -translate-x-1/2 bg-white px-1"></i>
-                            </div>
-                            <p class="text-[9px] text-gray-400 font-medium">預計航程 3h 05m</p>
-                        </div>
-                        <div>
-                            <p class="text-xl font-bold font-mono text-gray-800">TPE</p>
-                            <p class="text-[10px] font-bold text-sky-800">桃園機場 T2</p>
-                            <p class="text-[11px] font-mono text-gray-500 mt-1 font-bold">🛬 21:10</p>
-                            <p class="text-[9px] text-gray-400">抵達時間</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="diary-card p-4 bg-white mb-4 space-y-3">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5"><i class="fa-solid fa-hotel mr-1"></i>精確房間預訂與台幣分攤金額</h3>
-                    <div class="text-xs space-y-2.5">
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/13-14 Hostel JAQ takamatsu</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,403 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,201.5 元</p>
-                        </div>
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/14-16 松山全日空皇冠假日飯店</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 2 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,450 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,225 元</p>
-                        </div>
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/16-18 廣島全日空皇冠假日飯店</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 2 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 3,894 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,947 元</p>
-                        </div>
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/18-19 鞆の浦 Airbnb 包棟</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 1,910 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 955 元</p>
-                        </div>
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/19-20 APA 岡山站前店</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,476 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,238 元</p>
-                        </div>
-                        <div class="p-2.5 bg-[#FAF9F5] border border-[#E6DFD1] rounded-xl">
-                            <p class="font-bold text-gray-900">🏨 6/20-21 高松織女星飯店</p>
-                            <div class="flex justify-between text-[10px] text-gray-500 mt-1"><span>入住 1 晚 • 雙人總額</span><span class="font-bold text-red-600 font-mono">💵 NT$ 2,409 元</span></div>
-                            <p class="text-[10px] text-indigo-600 font-semibold mt-0.5">💰 每人精確分攤：NT$ 1,204.5 元</p>
-                        </div>
-                    </div>
-                </div>
-            `;
-        }
-
-// --- 記帳功能模組 (整合版：匯率同步 + CRUD 操作) ---
-
-// 1. 初始化資料與匯率
-let exchangeRate = 0.215; 
-
-async function syncExchangeRate() {
-    try {
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-        const data = await res.json();
-        exchangeRate = data.rates.TWD;
-    } catch (e) { console.warn("匯率同步失敗，使用預設值"); }
-    renderExpense();
-}
-
-// 2. 核心操作 (增/刪/改)
-function addExpense() {
-    const id = document.getElementById('expId').value; // 隱藏欄位判斷是否為編輯
-    const text = document.getElementById('expText').value;
-    const amountJpy = parseFloat(document.getElementById('expJpy').value);
-    const category = document.getElementById('expCat').value;
-    const payer = document.getElementById('expPayer').value;
-    const split = document.getElementById('expSplit').value;
-
-    if (!text || isNaN(amountJpy)) return alert("請輸入完整資訊");
-
-    if (id) {
-        // 更新模式
-        const index = expenseLedger.findIndex(i => i.id == id);
-        expenseLedger[index] = { id: parseInt(id), text, amountJpy, category, payer, split };
-    } else {
-        // 新增模式
-        expenseLedger.push({ id: Date.now(), text, amountJpy, category, payer, split });
-    }
-    
-    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-    renderExpense();
-}
-
-function deleteExpense(id) {
-    if(confirm("確定要刪除這筆支出嗎？")) {
-        expenseLedger = expenseLedger.filter(item => item.id !== id);
-        localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-        renderExpense();
-    }
-}
-
-function editExpense(id) {
-    const item = expenseLedger.find(i => i.id === id);
-    if (!item) return;
-    
-    document.getElementById('expId').value = item.id;
-    document.getElementById('expText').value = item.text;
-    document.getElementById('expJpy').value = item.amountJpy;
-    document.getElementById('expCat').value = item.category;
-    document.getElementById('expPayer').value = item.payer;
-    document.getElementById('expSplit').value = item.split;
-    window.scrollTo({ top: 150, behavior: 'smooth' });
-}
-
-// 3. 渲染介面
-function renderExpense() {
-    const container = document.getElementById('appBody');
-    const totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
-    const totalTwd = (totalJpy * exchangeRate).toFixed(0);
-
-    let listHtml = expenseLedger.map(item => `
-        <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E6DFD1] shadow-sm">
-            <div>
-                <p class="text-xs font-bold">${item.text}</p>
-                <p class="text-[10px] text-[#4A7C59]">${item.category} • ${item.payer}</p>
-            </div>
-            <div class="flex items-center gap-3">
-                <div class="text-right">
-                    <p class="text-xs font-mono font-bold">¥${item.amountJpy.toLocaleString()}</p>
-                    <p class="text-[10px] text-red-400 font-mono">≈ NT$ ${(item.amountJpy * exchangeRate).toFixed(0)}</p>
-                </div>
-                <button onclick="editExpense(${item.id})" class="text-blue-400"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button onclick="deleteExpense(${item.id})" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
-            </div>
-        </div>
-    `).join('');
-
-    container.innerHTML = `
-        <div class="diary-card p-5 bg-[#688B9A] text-white mb-6">
-            <h2 class="text-sm font-bold opacity-80">總支出儀表板</h2>
-            <div class="flex justify-between items-end mt-3">
-                <div><p class="text-[10px]">日幣總計</p><p class="text-xl font-mono font-bold">¥${totalJpy.toLocaleString()}</p></div>
-                <div class="text-right"><p class="text-[10px]">預估台幣</p><p class="text-2xl font-mono font-bold text-amber-300">NT$ ${totalTwd.toLocaleString()}</p></div>
-            </div>
-        </div>
-
-        <div class="diary-card p-5 bg-white mb-6">
-            <input type="hidden" id="expId">
-            <h3 class="text-xs font-bold text-gray-500 mb-4">＋ 記帳 / 編輯</h3>
-            <div class="grid grid-cols-2 gap-3">
-                <input type="text" id="expText" placeholder="項目名稱" class="col-span-2 border rounded-lg p-2 text-xs">
-                <input type="number" id="expJpy" placeholder="金額 (¥)" class="border rounded-lg p-2 text-xs">
-                <select id="expCat" class="border rounded-lg p-2 text-xs">
-                    <option>交通</option><option>美食</option><option>住宿</option><option>購物</option>
-                </select>
-                <select id="expPayer" class="border rounded-lg p-2 text-xs">
-                    ${membersList.map(m => `<option>${m.name}</option>`).join('')}
-                </select>
-                <select id="expSplit" class="border rounded-lg p-2 text-xs">
-                    <option>雙人均分</option><option>Charlotte 付</option><option>George 付</option>
-                </select>
-                <button onclick="addExpense()" class="col-span-2 bg-[#4A7C59] text-white py-2 rounded-lg text-xs font-bold active:scale-95">確認紀錄</button>
-            </div>
-        </div>
-
-        <div class="space-y-3 pb-20">
-            <h3 class="text-xs font-bold text-gray-500">📋 支出歷史明細</h3>
-            ${listHtml || '<p class="text-center text-xs text-gray-400 py-10">尚無紀錄</p>'}
-        </div>
-    `;
-}
-
-// 啟動
-syncExchangeRate();
-
-        // --- MODULE 4: PLANNING ---
-        function renderPlanning() {
-            const container = document.getElementById('appBody');
-            if(!container) return;
-            
-            let todoHtml = '';
-            todoData.forEach((item, index) => {
-                todoHtml += `
-                    <label class="flex items-center justify-between p-2 bg-[#FAF9F6] border border-[#E6DFD1] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
-                        <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                        <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleTodo(${index})" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
-                    </label>
-                `;
-            });
-
-            let baggageHtml = '';
-            for (const [groupName, items] of Object.entries(baggageData)) {
-                let itemsHtml = '';
-                items.forEach((item) => {
-                    itemsHtml += `
-                        <label class="flex items-center justify-between p-2 bg-white border border-[#EBE6DC] rounded-xl cursor-pointer hover:bg-gray-50 transition-all">
-                            <span class="text-xs text-gray-700 ${item.done ? 'line-through text-gray-400' : ''}">${item.text}</span>
-                            <input type="checkbox" ${item.done ? 'checked' : ''} onclick="toggleBaggage('${groupName}', '${item.id}')" class="w-4 h-4 rounded text-[#4A7C59] focus:ring-0">
-                        </label>
-                    `;
-                });
-
-                baggageHtml += `
-                    <div class="mb-4 last:mb-0">
-                        <h4 class="text-xs font-bold text-[#557583] mb-1.5 flex items-center gap-1">
-                            <span class="w-1.5 h-1.5 rounded-full bg-[#4A7C59]"></span> ${groupName}
-                        </h4>
-                        <div class="space-y-1.5 pl-2.5">${itemsHtml}</div>
-                    </div>
-                `;
-            }
-
-            container.innerHTML = `
-                <div class="diary-card p-4 bg-white space-y-5">
-                    <div>
-                        <h3 class="text-xs font-bold text-[#2D5137] mb-2.5 flex items-center gap-1.5">
-                            <i class="fa-solid fa-square-check"></i> 📋 行前待辦事項
-                        </h3>
-                        <div class="space-y-1.5">${todoHtml}</div>
-                    </div>
-                    <hr class="border-dashed border-[#E6DFD1]">
-                    <div>
-                        <h3 class="text-xs font-bold text-[#688B9A] mb-3 flex items-center gap-1.5">
-                            <i class="fa-solid fa-suitcase-rolling"></i> 🎒 行李打包清單
-                        </h3>
-                        <div class="space-y-3">${baggageHtml}</div>
-                    </div>
-                </div>
-            `;
-        }
-
-        function toggleTodo(index) {
-            todoData[index].done = !todoData[index].done;
-            localStorage.setItem('todo_data', JSON.stringify(todoData));
-            renderPlanning();
-        }
-
-        function toggleBaggage(groupName, itemId) {
-            baggageData[groupName] = baggageData[groupName].map(item => 
-                item.id === itemId ? { ...item, done: !item.done } : item
-            );
-            localStorage.setItem('baggage_groups', JSON.stringify(baggageData));
-            renderPlanning();
-        }
-
-        // --- MODULE 5: MEMBERS ---
-        function renderMembers() {
-            const container = document.getElementById('appBody');
-            if(!container) return;
-            let membersHtml = '';
-            membersList.forEach((m, idx) => {
-                membersHtml += `
-                    <div class="flex items-center justify-between bg-[#FDFDFD] p-3 rounded-xl border-2 border-[#E6DFD1]">
-                        <div class="flex items-center gap-3">
-                            <img id="avatar-img-${idx}" src="${m.avatar}" class="w-11 h-11 rounded-full object-cover border-2 border-[#4A7C59] shadow-inner">
-                            <div>
-                                <p class="text-xs font-bold text-gray-800">${m.name}</p>
-                                <p class="text-[9px] text-gray-400 font-mono">SWEET_COUPLE_0${idx+1}</p>
-                            </div>
-                        </div>
-                        <label class="diary-btn-blue text-[10px] px-3 py-1 font-bold shadow-sm cursor-pointer active:scale-95 transition-all">
-                            更新大頭貼 <input type="file" accept="image/*" class="hidden" onchange="compressAndUploadAvatar(event, ${idx})">
-                        </label>
-                    </div>
-                `;
-            });
-            container.innerHTML = `
-                <div class="diary-card p-4 bg-white space-y-4">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5">💕 旅遊成員</h3>
-                    <div class="space-y-3">${membersHtml}</div>
-                </div>
-            `;
-        }
-
-        function compressAndUploadAvatar(event, idx) {
-            const file = event.target.files[0]; if (!file) return;
-            const reader = new FileReader(); reader.readAsDataURL(file);
-            reader.onload = function (e) {
-                const img = new Image(); img.src = e.target.result;
-                img.onload = function () {
-                    const canvas = document.createElement('canvas'); const ctx = canvas.getContext('2d');
-                    const maxW = 120; const scale = maxW / img.width;
-                    canvas.width = maxW; canvas.height = img.height * scale;
-                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                    const compressedUrl = canvas.toDataURL('image/jpeg', 0.7);
-                    
-                    membersList[idx].avatar = compressedUrl;
-                    localStorage.setItem('m_list', JSON.stringify(membersList));
-                    const targetImg = document.getElementById(`avatar-img-${idx}`);
-                    if(targetImg) targetImg.src = compressedUrl;
-                };
-            };
-        }
-
-        initApp();
-    </script>
-</body>
-</html>
+            else if (
