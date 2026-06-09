@@ -99,9 +99,6 @@
     </nav>
 
     <script>
-// 記帳專用全域變數
-let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [];
-let exchangeRate = 0.215; // 預設匯率
         // ==========================================
         // 1. FIREBASE CONFIGURATION & INITIALIZATION
         // ==========================================
@@ -113,16 +110,7 @@ let exchangeRate = 0.215; // 預設匯率
             messagingSenderId: "YOUR_SENDER_ID",
             appId: "YOUR_APP_ID"
         };
-
-        async function syncRate() {
-    try {
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-        const data = await res.json();
-        exchangeRate = data.rates.TWD;
-    } catch(e) { console.warn("匯率同步失敗"); }
-}
-syncRate();
-
+        
         let db; let storage;
         try {
             if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
@@ -132,44 +120,13 @@ syncRate();
             }
         } catch(e) { console.log("Firebase 尚未填寫，自動切換至 LocalStorage 離線運行"); }
 
-window.addExpense = function() {
-    const id = document.getElementById('expId').value;
-    const text = document.getElementById('expText').value;
-    const amountJpy = parseFloat(document.getElementById('expJpy').value);
-    if (!text || isNaN(amountJpy)) return alert("請填完整資料");
-    const entry = { id: id ? parseInt(id) : Date.now(), text, amountJpy, 
-                    category: document.getElementById('expCat').value, 
-                    payer: document.getElementById('expPayer').value, 
-                    split: document.getElementById('expSplit').value };
-    if(id) { expenseLedger[expenseLedger.findIndex(i => i.id == id)] = entry; }
-    else { expenseLedger.push(entry); }
-    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-    renderExpense();
-};
-
-window.deleteExpense = function(id) {
-    if(confirm("確定刪除？")) {
-        expenseLedger = expenseLedger.filter(i => i.id !== id);
-        localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-        renderExpense();
-    }
-};
-
-window.editExpense = function(id) {
-    const item = expenseLedger.find(i => i.id === id);
-    document.getElementById('expId').value = item.id;
-    document.getElementById('expText').value = item.text;
-    document.getElementById('expJpy').value = item.amountJpy;
-    document.getElementById('expCat').value = item.category;
-    document.getElementById('expPayer').value = item.payer;
-    document.getElementById('expSplit').value = item.split;
-};
-
         // ==========================================
         // 2. STATE MANAGEMENT & DATA
         // ==========================================
         let activeTab = 'schedule';
         let selectedDay = 1;
+        const FX_RATE = 0.197; // 固定設定匯率 (1 JPY = 0.197 TWD)
+        let editingExpenseId = null; // 用於辨識目前是否正在編輯某筆花費
 
         let membersList = JSON.parse(localStorage.getItem('m_list')) || [
             { id: 'm1', name: '宜萱', avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=120&q=80' },
@@ -205,13 +162,13 @@ window.editExpense = function(id) {
             ]
         };
 
+        // 升級版帳本資料：補齊幣別、類別、分攤資訊
         let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [
-            { id: 'ex1', text: 'D1 高松商店街宵夜骨付鳥', amountJpy: 4000, payer: '顥璋', split: '雙人均分' },
-            { id: 'ex2', text: 'D2 大步危峽觀光船雙人票', amountJpy: 3000, payer: '宜萱', split: '雙人均分' },
-            { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: '顥璋', split: '雙人均分' }
+            { id: 'ex1', day: 1, text: 'D1 高松商店街宵夜骨付鳥', category: '美食', inputCurrency: 'JPY', amount: 4000, amountJpy: 4000, amountTwd: 788, payer: '顥璋', split: '雙人均分' },
+            { id: 'ex2', day: 2, text: 'D2 大步危峽觀光船雙人票', category: '交通', inputCurrency: 'JPY', amount: 3000, amountJpy: 3000, amountTwd: 591, payer: '宜萱', split: '雙人均分' },
+            { id: 'ex3', day: 3, text: 'D3 松山城雙人空中吊椅套票', category: '交通', inputCurrency: 'JPY', amount: 2080, amountJpy: 2080, amountTwd: 410, payer: '顥璋', split: '雙人均分' }
         ];
 
-        // 核心行程資料 (已將 Day 4, Day 5, Day 7 的所有景點導航與吸菸區改為真實 Google Map 關鍵字查詢網址)
         const mainItinerary = {
             1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
                 { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://www.google.com/maps/search/?api=1&query=Takamatsu+Airport",
@@ -248,7 +205,7 @@ window.editExpense = function(id) {
                 { id: "4_3", time: "11:00", type: "transport", spot: "島波海道跳島自駕與午餐", desc: "一路開車跨越伯方島、大三島、生口島。中午在島上休息站享用著名的檸檬拉麵或鮮魚海鮮丼。", note: "跨海橋樑費 SEP 已全包。今日車程較長，中途需加油預估 2,000 日圓。", map: "https://www.google.com/maps/search/?api=1&query=Tatara+Shimanami+Park",
                   smokeLocation: "大三島「道の駅 多多羅島波公園」大型遊覽車停車場與農特產中心後門皆設有海景吸菸亭。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Tatara+Shimanami+Park+Rest+Area" },
                 { id: "4_4", time: "13:30", type: "transport", spot: "拉車前往廣島市區", desc: "下島波海道後，經由尾道走山陽自動車道直奔廣島市區（車程約 1.5 小時）。", note: "注意速限安全行駛。", map: "https://www.google.com/maps/search/?api=1&query=Hiroshima+City" },
-                { id: "4_5", time: "15:00", type: "scenic", spot: "廣島城 (護國神社)", desc: "地址：廣島県廣島市中区基町21-1。陽光灑在黑色的木造天守閣上非常美麗，圍牆與護城河畔散步極具風味，在外圍拍照非常出片，March 也很好停。", note: "傍晚朝聖黑之廣島城外圍夕陽。", map: "https://www.google.com/maps/search/?api=1&query=Hiroshima+Castle",
+                { id: "4_5", time: "15:00", type: "scenic", spot: "廣島城 (護國神社)", desc: "地址：廣島県廣島市中区基町21-1。陽光灑在黑色的木造天守閣上美麗，圍牆與護城河畔散步極具風味，在外圍拍照極出片，March 也很好停。", note: "傍晚朝聖黑之廣島城外圍夕陽。", map: "https://www.google.com/maps/search/?api=1&query=Hiroshima+Castle",
                   smokeLocation: "平和公園與廣島城內全域禁菸。吸菸需至公園外圍、或廣島城護城河入口旁的公廁旁定點。", smokeMap: "https://www.google.com/maps/search/?api=1&query=Hiroshima+Castle+Restroom" },
                 { id: "4_6", time: "16:00", type: "hotel", spot: "廣島全日空皇冠假日飯店 入住", desc: "地址：廣島県廣島市中区中町7-20。放好行李、稍微休息。", note: "飯店 1 樓大廳後方、及宴會廳樓層備有專用密閉空調吸菸室。", map: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Hiroshima",
                   smokeLocation: "飯店館內設有專用密閉吸菸室，客房內均禁菸。", smokeMap: "https://www.google.com/maps/search/?api=1&query=ANA+Crowne+Plaza+Hiroshima+Smoking+Room" },
@@ -317,6 +274,15 @@ window.editExpense = function(id) {
             transport: { label: '交通', bg: 'bg-[#EEF1F6]', text: 'text-[#4B6584]', dot: 'bg-[#4B6584]' },
             hotel: { label: '住宿', bg: 'bg-[#F2EFE9]', text: 'text-[#7A6F5D]', dot: 'bg-[#7A6F5D]' },
             shopping: { label: '購物', bg: 'bg-[#F9EBF1]', text: 'text-[#B3547F]', dot: 'bg-[#B3547F]' }
+        };
+
+        // 記帳專用分類標籤配色
+        const expenseCategoryMeta = {
+            '美食': 'bg-[#FDF3E7] text-[#D9822B]',
+            '交通': 'bg-[#EEF1F6] text-[#4B6584]',
+            '購物': 'bg-[#F9EBF1] text-[#B3547F]',
+            '住宿': 'bg-[#F2EFE9] text-[#7A6F5D]',
+            '其他': 'bg-gray-100 text-gray-600'
         };
 
         // ==========================================
@@ -595,40 +561,233 @@ window.editExpense = function(id) {
             `;
         }
 
-        // --- MODULE 3: EXPENSE ---
-       function renderExpense() {
-    const totalJpy = expenseLedger.reduce((sum, i) => sum + i.amountJpy, 0);
-    let listHtml = expenseLedger.map(i => `
-        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#E6DFD1] shadow-sm mb-2">
-            <div><p class="text-xs font-bold">${i.text}</p><p class="text-[10px] text-[#4A7C59]">${i.category} • ${i.payer}</p></div>
-            <div class="text-right">
-                <p class="text-xs font-mono font-bold">¥${i.amountJpy.toLocaleString()}</p>
-                <p class="text-[10px] text-red-500 font-mono">≈ NT$ ${Math.round(i.amountJpy * exchangeRate).toLocaleString()}</p>
-            </div>
-            <div class="flex gap-2">
-                <button onclick="editExpense(${i.id})" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
-                <button onclick="deleteExpense(${i.id})" class="text-gray-300"><i class="fa-solid fa-trash"></i></button>
-            </div>
-        </div>
-    `).join('');
+        // --- MODULE 3: UPGRADED EXPENSE SYSTEM ---
+        function renderExpense() {
+            const container = document.getElementById('appBody');
+            if(!container) return;
 
-    document.getElementById('appBody').innerHTML = `
-        <div class="diary-card p-5 bg-[#688B9A] text-white mb-6">
-            <p class="text-[10px] opacity-80">總支出儀表板 (匯率 ${exchangeRate.toFixed(3)})</p>
-            <p class="text-xl font-bold font-mono">¥${totalJpy.toLocaleString()} / <span class="text-amber-300">NT$ ${Math.round(totalJpy * exchangeRate).toLocaleString()}</span></p>
-        </div>
-        <input type="hidden" id="expId">
-        <div class="grid grid-cols-2 gap-2 mb-6">
-            <input type="text" id="expText" placeholder="項目名稱" class="col-span-2 border p-3 rounded-lg text-xs">
-            <input type="number" inputmode="numeric" id="expJpy" placeholder="金額 (日幣 ¥)" class="border p-3 rounded-lg text-xs font-mono">
-            <select id="expCat" class="border p-3 rounded-lg text-xs"><option>美食</option><option>交通</option><option>購物</option><option>住宿</option></select>
-            <select id="expPayer" class="border p-3 rounded-lg text-xs">${membersList.map(m=>`<option>${m.name}</option>`).join('')}</select>
-            <select id="expSplit" class="col-span-2 border p-3 rounded-lg text-xs"><option>雙人均分</option><option>Charlotte 付</option><option>George 付</option></select>
-            <button onclick="addExpense()" class="col-span-2 bg-[#4A7C59] text-white p-3 rounded-lg text-xs font-bold">確認紀錄</button>
-        </div>
-        ${listHtml}
-    `;
-}
+            // 計算加總儀表板數據
+            let totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
+            let totalTwd = expenseLedger.reduce((sum, item) => sum + item.amountTwd, 0);
+
+            // 分日群組化明細
+            let dayGroupedHtml = '';
+            for (let d = 1; d <= 9; d++) {
+                let dayItems = expenseLedger.filter(item => item.day == d);
+                if (dayItems.length === 0) continue;
+
+                let itemsHtml = '';
+                dayItems.forEach((item) => {
+                    let catStyle = expenseCategoryMeta[item.category] || 'bg-gray-100 text-gray-600';
+                    itemsHtml += `
+                        <div class="bg-[#FDFDFD] p-3 rounded-xl border border-[#E6DFD1] flex justify-between items-center transition-all hover:bg-gray-50">
+                            <div class="space-y-1 max-w-[60%]">
+                                <div class="flex items-center gap-1.5 flex-wrap">
+                                    <span class="text-[9px] font-bold px-1.5 py-0.5 rounded ${catStyle}">${item.category}</span>
+                                    <p class="text-xs font-bold text-gray-800 line-clamp-1">${item.text}</p>
+                                </div>
+                                <p class="text-[10px] text-gray-400 font-medium">付款：${item.payer} • ${item.split}</p>
+                            </div>
+                            <div class="flex items-center gap-2.5 text-right">
+                                <div class="font-mono">
+                                    <p class="text-xs font-black text-gray-900">¥${Math.round(item.amountJpy).toLocaleString()}</p>
+                                    <p class="text-[10px] font-bold text-indigo-600">NT$${Math.round(item.amountTwd).toLocaleString()}</p>
+                                </div>
+                                <div class="flex flex-col gap-1.5">
+                                    <button onclick="editExpense('${item.id}')" class="text-gray-400 hover:text-amber-600 active:scale-90 transition-all" title="編輯項目"><i class="fa-solid fa-pen text-[11px]"></i></button>
+                                    <button onclick="deleteExpense('${item.id}')" class="text-gray-300 hover:text-red-500 active:scale-90 transition-all" title="刪除項目"><i class="fa-solid fa-trash-can text-[11px]"></i></button>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+                dayGroupedHtml += `
+                    <div class="mb-4">
+                        <div class="text-[11px] font-black text-emerald-700 bg-emerald-50 border border-emerald-100 px-2.5 py-1 rounded-lg inline-block mb-1.5 shadow-sm">
+                            🗓️ Day ${d} • ${mainItinerary[d].date.split(' ')[0]} 支出明細
+                        </div>
+                        <div class="space-y-1.5 pl-1">${itemsHtml}</div>
+                    </div>
+                `;
+            }
+
+            container.innerHTML = `
+                <div class="diary-card p-4 bg-gradient-to-br from-[#4A7C59] to-[#2D5137] text-white mb-4 relative overflow-hidden">
+                    <div class="absolute -right-6 -bottom-6 opacity-10 text-7xl"><i class="fa-solid fa-calculator"></i></div>
+                    <p class="text-[10px] text-emerald-50 tracking-wider font-bold">📊 旅程累計總支出儀表板 (即時匯率: ${FX_RATE})</p>
+                    <div class="grid grid-cols-2 gap-2 mt-2 pt-1">
+                        <div>
+                            <span class="text-[10px] text-emerald-200 block font-medium">日幣外幣總額</span>
+                            <h2 class="text-xl font-mono font-black text-amber-300">¥ ${Math.round(totalJpy).toLocaleString()}</h2>
+                        </div>
+                        <div class="border-l border-white/20 pl-3">
+                            <span class="text-[10px] text-emerald-200 block font-medium">台幣加總估算</span>
+                            <h2 class="text-xl font-mono font-black text-emerald-100">NT$ ${Math.round(totalTwd).toLocaleString()}</h2>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="diary-card p-4 bg-white mb-4 border-2 border-[#D9D2C2]" id="ledgerFormContainer">
+                    <h3 class="text-xs font-bold text-[#A67C52] mb-3 flex items-center justify-between">
+                        <span id="formTitle"><i class="fa-solid fa-pen-nib mr-1.5"></i>隨手記一筆花費</span>
+                        <span class="text-[10px] text-gray-400 font-mono font-normal">匯率連動雙向自動估算</span>
+                    </h3>
+                    <div class="space-y-2.5 text-xs">
+                        <div class="flex gap-2">
+                            <select id="expDay" class="w-1/3 border border-[#E6DFD1] rounded-xl px-2 py-2 bg-gray-50 focus:outline-none font-medium text-gray-700">
+                                ${[1,2,3,4,5,6,7,8,9].map(d => `<option value="${d}" ${selectedDay===d?'selected':''}>Day ${d}</option>`).join('')}
+                            </select>
+                            <input type="text" id="expText" placeholder="消費項目 (例如: 讚岐烏龍麵)" class="w-2/3 border border-[#E6DFD1] rounded-xl px-3 py-2 focus:outline-none">
+                        </div>
+
+                        <div class="flex gap-2">
+                            <div class="w-1/2 flex border border-[#E6DFD1] rounded-xl overflow-hidden bg-white">
+                                <select id="expCurrency" class="bg-gray-100 px-2 font-mono font-bold text-gray-700 border-r border-[#E6DFD1] focus:outline-none">
+                                    <option value="JPY">¥ JPY</option>
+                                    <option value="TWD">$ TWD</option>
+                                </select>
+                                <input type="number" inputmode="decimal" id="expAmount" placeholder="金額" class="w-full px-2 py-2 font-mono font-bold focus:outline-none text-center">
+                            </div>
+                            <select id="expCategory" class="w-1/2 border border-[#E6DFD1] rounded-xl px-2 py-2 bg-white focus:outline-none">
+                                <option value="美食">🍔 美食名物</option>
+                                <option value="交通">🚗 交通自駕</option>
+                                <option value="購物">🛍️ 雜貨購物</option>
+                                <option value="住宿">🏨 精緻旅宿</option>
+                                <option value="其他">✨ 其他支出</option>
+                            </select>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-2">
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] text-gray-400 pl-1 font-bold">누가? 付款人</label>
+                                <select id="expPayer" class="border border-[#E6DFD1] rounded-xl px-2 py-1.5 bg-white focus:outline-none">
+                                    ${membersList.map(m => `<option>${m.name}</option>`).join('')}
+                                </select>
+                            </div>
+                            <div class="flex flex-col gap-1">
+                                <label class="text-[10px] text-gray-400 pl-1 font-bold">💡 分攤對象</label>
+                                <select id="expSplit" class="border border-[#E6DFD1] rounded-xl px-2 py-1.5 bg-white focus:outline-none">
+                                    <option value="雙人均分">🧑‍🤝‍🧑 雙人均分</option>
+                                    <option value="宜萱全付">🙋‍♀️ 宜萱全付</option>
+                                    <option value="顥璋全付">🙋‍♂️ 顥璋全付</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="flex gap-2 pt-1">
+                            <button onclick="saveExpense()" id="submitBtn" class="flex-grow diary-btn-blue py-2.5 text-xs font-bold shadow-sm active:scale-95 transition-all">手帳記帳確認</button>
+                            <button onclick="cancelEdit()" id="cancelEditBtn" class="hidden w-1/4 bg-gray-200 text-gray-600 rounded-xl font-bold hover:bg-gray-300 transition-all active:scale-95">取消</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="space-y-2">
+                    <h3 class="text-xs font-bold text-gray-400 px-1 flex items-center justify-between">
+                        <span>📋 旅程支出歷史明細條</span>
+                        <span class="text-[9px]">提示：點擊右側筆頭可重新編輯</span>
+                    </h3>
+                    <div class="space-y-3 max-h-[40vh] overflow-y-auto hide-scrollbar bg-white/40 p-1.5 rounded-2xl">
+                        ${dayGroupedHtml || '<p class="text-center text-xs text-gray-400 py-6">目前尚無手帳記帳紀錄，快從上方輸入一筆吧！</p>'}
+                    </div>
+                </div>
+            `;
+        }
+
+        // 儲存（包含新增與編輯更新）
+        function saveExpense() {
+            const day = parseInt(document.getElementById('expDay').value);
+            const text = document.getElementById('expText').value.trim();
+            const curr = document.getElementById('expCurrency').value;
+            const amount = parseFloat(document.getElementById('expAmount').value);
+            const category = document.getElementById('expCategory').value;
+            const payer = document.getElementById('expPayer').value;
+            const split = document.getElementById('expSplit').value;
+
+            if (!text || isNaN(amount) || amount <= 0) {
+                alert('請填寫完整項目名稱與正確金額唷！');
+                return;
+            }
+
+            // 精準雙向匯率換算
+            let amountJpy = 0;
+            let amountTwd = 0;
+            if (curr === 'JPY') {
+                amountJpy = amount;
+                amountTwd = Math.round(amount * FX_RATE);
+            } else {
+                amountTwd = amount;
+                amountJpy = Math.round(amount / FX_RATE);
+            }
+
+            if (editingExpenseId) {
+                // 執行編輯更新邏輯
+                expenseLedger = expenseLedger.map(item => {
+                    if (item.id === editingExpenseId) {
+                        return { ...item, day, text, category, inputCurrency: curr, amount, amountJpy, amountTwd, payer, split };
+                    }
+                    return item;
+                });
+                editingExpenseId = null;
+            } else {
+                // 執行新收據建立邏輯
+                const newExp = {
+                    id: 'ex_' + Date.now(),
+                    day, text, category,
+                    inputCurrency: curr,
+                    amount, amountJpy, amountTwd,
+                    payer, split
+                };
+                expenseLedger.push(newExp);
+            }
+
+            localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+            renderExpense();
+        }
+
+        // 啟動變更編輯模式
+        function editExpense(id) {
+            const target = expenseLedger.find(item => item.id === id);
+            if (!target) return;
+
+            editingExpenseId = id;
+
+            // 切換填寫面板的元件視覺狀態
+            document.getElementById('formTitle').innerHTML = `<i class="fa-solid fa-pen-to-square text-amber-600 mr-1.5"></i>正在編輯：${target.text}`;
+            document.getElementById('ledgerFormContainer').classList.remove('border-[#D9D2C2]');
+            document.getElementById('ledgerFormContainer').classList.add('border-amber-500', 'bg-amber-50/20');
+            
+            // 帶入即有值
+            document.getElementById('expDay').value = target.day;
+            document.getElementById('expText').value = target.text;
+            document.getElementById('expCurrency').value = target.inputCurrency || 'JPY';
+            document.getElementById('expAmount').value = target.amount;
+            document.getElementById('expCategory').value = target.category || '美食';
+            document.getElementById('expPayer').value = target.payer;
+            document.getElementById('expSplit').value = target.split || '雙人均分';
+
+            document.getElementById('submitBtn').innerText = '儲存更新手帳';
+            document.getElementById('cancelEditBtn').classList.remove('hidden');
+            
+            // 平滑捲動至頂部填寫處，使用者體驗加分
+            document.getElementById('ledgerFormContainer').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        // 取消編輯狀態
+        function cancelEdit() {
+            editingExpenseId = null;
+            renderExpense();
+        }
+
+        // 刪除項目
+        function deleteExpense(id) {
+            if (confirm('確定要刪除這筆手帳帳目紙條嗎？')) {
+                expenseLedger = expenseLedger.filter(item => item.id !== id);
+                localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+                if (editingExpenseId === id) editingExpenseId = null;
+                renderExpense();
+            }
+        }
 
         // --- MODULE 4: PLANNING ---
         function renderPlanning() {
@@ -723,7 +882,7 @@ window.editExpense = function(id) {
             });
             container.innerHTML = `
                 <div class="diary-card p-4 bg-white space-y-4">
-                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5">💕 情侶甜蜜手帳成員名冊</h3>
+                    <h3 class="text-xs font-bold text-gray-400 border-b border-gray-100 pb-1.5">💕 旅遊成員</h3>
                     <div class="space-y-3">${membersHtml}</div>
                 </div>
             `;
