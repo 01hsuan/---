@@ -4,14 +4,10 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>🌿 山陽四國．手帳風情侶自駕遊</title>
-    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- FontAwesome Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <!-- Google Fonts 圓體 -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Kosugi+Maru&family=Noto+Sans+TC:wght@400;500;700&display=swap">
     
-    <!-- Firebase App & Services -->
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-storage-compat.js"></script>
@@ -54,7 +50,6 @@
 </head>
 <body class="max-w-md mx-auto min-h-screen flex flex-col justify-between pb-28 text-gray-800">
 
-    <!-- Top Scrapbook Header -->
     <header class="bg-[#688B9A] text-white px-5 pt-6 pb-5 rounded-b-[32px] shadow-md border-b-4 border-[#4E6E7B] sticky top-0 z-40">
         <div class="flex justify-between items-center mb-4">
             <div>
@@ -68,14 +63,11 @@
             </div>
         </div>
         
-        <!-- 橫向捲動日期選擇器 -->
         <div class="flex gap-2.5 overflow-x-auto hide-scrollbar py-1" id="dateSelector"></div>
     </header>
 
-    <!-- Main Content Stage -->
     <main class="px-4 py-4 flex-grow" id="appBody"></main>
 
-    <!-- 行程詳情與照片上傳彈窗 (Modal) -->
     <div id="detailModal" class="fixed inset-0 bg-black/50 z-50 hidden flex items-center justify-center p-4 backdrop-blur-sm animate-fade-in">
         <div class="bg-white rounded-3xl w-full max-w-sm p-5 border-2 border-[#E6DFD1] shadow-2xl relative max-h-[85vh] overflow-y-auto hide-scrollbar">
             <button onclick="closeDetailModal()" class="absolute top-4 right-4 text-gray-400 hover:text-gray-600"><i class="fa-solid fa-circle-xmark text-xl"></i></button>
@@ -83,7 +75,6 @@
         </div>
     </div>
 
-    <!-- 底部導航列 -->
     <nav class="fixed bottom-4 left-4 right-4 max-w-sm mx-auto bg-white/95 backdrop-blur-md border-2 border-[#E6DFD1] shadow-xl z-40 rounded-2xl p-2 flex justify-around items-center">
         <button onclick="changeTab('schedule')" id="nav-schedule" class="flex flex-col items-center text-[#4A7C59] font-bold active:scale-95 transition-all">
             <i class="fa-solid fa-compass text-lg mb-0.5"></i>
@@ -174,7 +165,7 @@
             { id: 'ex3', text: 'D3 松山城雙人空中吊椅套票', amountJpy: 2080, payer: 'George', split: '雙人均分' }
         ];
 
-        // 核心行程資料（新增景點精確吸菸區資料與專屬 Google Maps 地標）
+        // 核心行程資料
         const mainItinerary = {
             1: { date: "6/13 (六)", weather: "☀️ 晴 26°C", title: "台北 ➔ 高松機場 ➔ 市區", focus: "抵達、機場取車、高松商店街晚餐與初試身手。", smoking: "商店街內全面禁菸，但特定居酒屋內部或步行 3 分鐘的超商門口有專屬吸菸區。", items: [
                 { id: "1_1", time: "18:05", type: "transport", spot: "高松機場辦理入境", desc: "班機準時降落，出關流程快速。", note: "記得先準備好 Visit Japan Web 的 QR Code 加快速度。", map: "https://maps.google.com/?q=Takamatsu+Airport",
@@ -204,25 +195,39 @@
                 { id: "3_3", time: "14:00", type: "shopping", spot: "大街道與銀天街商店街", desc: "全天瘋狂購物日，並朝盛【扭蛋之森】大扭特扭。", note: "中午吃經典鍋燒烏龍麵，晚餐吃瀨戶內海海鮮居酒屋。", map: "https://maps.google.com/?q=Matsuyama+Okaido+Shopping+Street",
                   smokeLocation: "大街道內全面禁菸。可步行至「Lawson 松山大街道二丁目店」內部或周邊特定大樓吸菸室。", smokeMap: "https://maps.google.com/?q=Lawson+Matsuyama+Okaido+2-Chome" }
             ]},
-            4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 廣島", focus: "世界級自行車聖地公路自駕、絕美瀨戶內海觀景台、拉車到廣島。", smoking: "龜老山展望台停車場旁設有吸菸區。島波海道沿途的「道の駅」都有極棒的戶外喫煙所。", items: [
-                { id: "4_1", time: "09:30", type: "scenic", spot: "龜老山展望公園", desc: "大島最具代表性景點，隈研吾設計的無機調木質全景觀景台。", note: "能 360 度俯瞰壯觀的來島海峽大橋，美到令人摒息。", map: "https://maps.google.com/?q=Kirosan+Observatory+Park",
-                  smokeLocation: "木造觀景台階梯上方禁菸。吸菸區位於山頂公共廁所與專用停車場中間的開闊草皮側。", smokeMap: "https://maps.google.com/?q=Kirosan+Observatory+Park+Parking" },
-                { id: "4_2", time: "11:00", type: "transport", spot: "島波海道自駕跳島", desc: "一路開車跨越伯方島、大三島、生口島，中午在島上吃檸檬拉麵。", note: "跨海橋樑費 SEP 已全包，中途需加油預估 2,000 日圓。", map: "https://maps.google.com/?q=Shimanami+Kaido",
-                  smokeLocation: "大三島「道の駅 多多羅島波公園」大型遊覽車停車場與農特產中心後門皆設有海景吸菸亭。", smokeMap: "https://maps.google.com/?q=Michi-no-Eki+Tatara+Shimanami+Park" },
-                { id: "4_3", type: "hotel", spot: "廣島全日空皇冠假日飯店", desc: "地址：廣島県廣島市中区中町7-20", note: "下海道後走山陽道拉車約 1.5 小時至廣島市區辦理入住。", map: "https://maps.google.com/?q=ANA+Crowne+Plaza+Hiroshima",
-                  smokeLocation: "飯店 1 樓大廳後方、及宴會廳樓層備有專用密閉空調吸菸室。", smokeMap: "https://maps.google.com/?q=ANA+Crowne+Plaza+Hiroshima" },
-                { id: "4_4", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島", desc: "逛街，朝盛新開幕商場的【AKOMEYA TOKYO】精緻生活雜貨。", note: "Charlotte 的重點大店！晚餐順便尋找廣島在地小吃。", map: "https://maps.google.com/?q=Hiroshima+Hondori+Shopping+Street",
-                  smokeLocation: "本通商圈路面禁菸。新開商場「Minamoa廣島」高樓層餐廳街角落設有新穎的指定電子菸/紙菸吸菸室。", smokeMap: "https://maps.google.com/?q=Hiroshima+Station+Minamoa" }
+            4: { date: "6/16 (二)", weather: "☀️ 晴 25°C", title: "島波海道跳島自駕 ➔ 龜老山展望台 ➔ 廣島城外圍夕陽 ➔ 廣島全面購物", focus: "世界級自行車聖地公路自駕、絕美來島海峽大橋景觀、傍晚朝聖黑之廣島城、本通與 Minamoa 瘋狂購物。", smoking: "龜老山展望台停車場旁設有吸菸區。廣島全日空飯店館內設有專用密閉吸菸室，本通商店街部分指定室內場所或柏青哥店亦備有吸菸區。", items: [
+                { id: "4_1", time: "08:30", type: "transport", spot: "退房出發，前往今治市", desc: "開車北上至今治市，準備進入【島波海道】。", note: "島波海道跨海橋樑費（SEP 已包）。", map: "https://maps.google.com",
+                  smokeLocation: "出發前可於便利商店或沿途休息站定點補菸。", smokeMap: "https://maps.google.com" },
+                { id: "4_2", time: "09:30", type: "scenic", spot: "大島【龜老山展望公園】", desc: "這座由隈研吾設計的觀景台能 360 度俯瞰來島海峽大橋（此生必看絕景）。", note: "設計極具現代感，與自然景觀完美融合。", map: "https://maps.google.com",
+                  smokeLocation: "觀景台階梯上方禁菸。吸菸區位於山頂公共廁所與專用停車場中間的開闊草皮側。", smokeMap: "https://maps.google.com" },
+                { id: "4_3", time: "11:00", type: "scenic", spot: "島波海道自駕跳島 & 午餐", desc: "沿著島波海道一路跳島自駕（伯方島、大三島、生口島），中午在島上休息站享用著名的檸檬拉麵或鮮魚海鮮丼。", note: "今日車程較長，中途加油約 2,000 日圓（~台幣 394 元）。", map: "https://maps.google.com",
+                  smokeLocation: "大三島「道の駅 多多羅島波公園」大型遊覽車停車場與農特產中心後門皆設有海景吸菸亭。", smokeMap: "https://maps.google.com" },
+                { id: "4_4", time: "13:30", type: "transport", spot: "自駕前往廣島市區", desc: "下島波海道後，經由尾道走山陽自動車道直奔廣島市區（車程約 1.5 小時）。", note: "注意速限，穩定跟隨車流。", map: "https://maps.google.com",
+                  smokeLocation: "高速公路沿途高速服務區（SA/PA）皆設有指定吸菸室。", smokeMap: "https://maps.google.com" },
+                { id: "4_5", time: "15:00", type: "scenic", spot: "【廣島城（護國神社）】外圍散步", desc: "這時間陽光灑在黑色的木造天守閣上非常美麗，圍牆與護城河畔散步極具風味，在外圍拍照非常出片。", note: "地址：廣島県廣島市中区基町21-1。March 也很好停。", map: "https://maps.google.com",
+                  smokeLocation: "廣島城內部與護國神社境內禁菸，吸菸需至公園外圍指定公廁旁定點。", smokeMap: "https://maps.google.com" },
+                { id: "4_6", time: "16:00", type: "hotel", spot: "廣島全日空皇冠假日飯店 入住", desc: "辦理入住登記，放行李、稍微休息。", note: "地址：廣島県廣島市中区中町7-20。", map: "https://maps.google.com",
+                  smokeLocation: "飯店 1 樓大廳後方及宴會廳樓層備有專用密閉空調負壓吸菸室，客房均禁菸。", smokeMap: "https://maps.google.com" },
+                { id: "4_7", time: "16:30", type: "shopping", spot: "本通商店街 & Minamoa廣島大逛特逛", desc: "步行至最熱鬧的本通商店街，並前往新開幕的【Minamoa廣島】百貨，朝聖【AKOMEYA TOKYO】尋找精緻日式雜貨、米食與生活好物。", note: "每日預估花費（雙人）：油資 + 豐盛居酒屋晚餐與逛街小吃共 11,500 日圓（~台幣 2,264 元）。", map: "https://maps.google.com",
+                  smokeLocation: "本通商圈路面禁菸。新開商場「Minamoa廣島」高樓層餐廳街角落設有新穎的指定電子菸/紙菸吸菸室。", smokeMap: "https://maps.google.com" }
             ]},
-            5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "廣島城 ➔ 原爆圓頂 ➔ 宮島嚴島神社", focus: "歷史巡禮、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "宮島全島嚴格禁菸，但在「宮島棧橋出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室。", items: [
-                { id: "5_1", time: "09:00", type: "scenic", spot: "原子彈爆炸圓頂屋 & 廣島城", desc: "漫步平和紀念公園，見證歷史傷痕與重生歷史。", note: "廣島城又稱鯉城，非常雄偉好拍。", map: "https://maps.google.com/?q=Atomic+Bomb+Dome",
-                  smokeLocation: "平和公園內全域禁菸。吸菸需至公園外圍、或廣島城護城河入口旁的公廁旁定點。", smokeMap: "https://maps.google.com/?q=Hiroshima+Castle+Entrance" },
-                { id: "5_2", time: "12:15", type: "transport", spot: "搭乘 JR 宮島渡輪", desc: "開車至宮島口停放（停車費 1,000 日圓），搭船前往宮島。", note: "渡輪費雙人來回與宮島訪問稅約 600 日圓。", map: "https://maps.google.com/?q=Miyajimaguchi+Ferry+Terminal",
-                  smokeLocation: "宮島口渡輪新航廈一樓外側、靠近JR碼頭左側設有戶外定點圍欄吸菸區。", smokeMap: "https://maps.google.com/?q=Miyajimaguchi+Ferry+Terminal" },
-                { id: "5_3", time: "13:00", type: "scenic", spot: "嚴島神社海上大鳥居", desc: "完美目睹大鳥居完全矗立在蔚藍海水中的神聖滿潮絕景。", note: "在表參道吃現烤肥美大牡蠣與紅葉饅頭。", map: "https://maps.google.com/?q=Itsukushima+Shrine",
-                  smokeLocation: "全島世界遺產禁菸。唯一合法室外公眾吸菸室位於「宮島棧橋（渡輪站）」出站右側的密閉涼亭內。", smokeMap: "https://maps.google.com/?q=Miyajima+Pier+Smoking+Area" },
-                { id: "5_4", time: "19:00", type: "food", spot: "廣島燒名店【鐵太】或【電光石火】", desc: "回廣島市區，安排正宗大份量廣島燒晚餐。", note: "看著師傅在面前的大鐵板上層層堆疊高麗菜、五花肉與炒麵。", map: "https://maps.google.com/?q=Chinchikurin+Hiroshima",
-                  smokeLocation: "店內客席皆禁菸，但店門外或所在美食大樓（如廣島駅 Full Focus 大樓）同層備有公共吸菸室。", smokeMap: "https://maps.google.com/?q=Hiroshima+Full+Focus+Building" }
+            5: { date: "6/17 (三)", weather: "☀️ 晴 27°C", title: "原爆圓頂 ➔ 吳市大和博物館 ➔ 宮島嚴島神社（完美兼顧大鳥居滿潮）", focus: "歷史和平巡禮、震撼的 1:10 大和號戰艦模型、下午前往宮島目睹世界遺產海上大鳥居滿潮絕景。", smoking: "大和博物館戶外靠港口公園側設有指定集菸桶。宮島全島嚴格禁菸以保護神鹿與古蹟，但在「宮島棧橋（渡輪站）出口右側」和「主要商店街後方巷弄」設有指定密閉吸菸室，進島前或回程時可先在此補一根。", items: [
+                { id: "5_1", time: "08:30", type: "scenic", spot: "【原子彈爆炸圓頂屋（平和紀念公園）】", desc: "從飯店出發，步行或開車前往鄰近的圓頂屋，靜靜感受歷史的重量與和平的珍貴。", note: "歷史散步，感受城市的重生。", map: "https://maps.google.com",
+                  smokeLocation: "平和紀念公園內全域禁菸。吸菸需至公園外圍公共吸菸點。", smokeMap: "https://maps.google.com" },
+                { id: "5_2", time: "09:30", type: "transport", spot: "自駕前往軍港之城——吳市", desc: "開車經由廣島高速道路前往吳市【大和博物館】（車程約 45 分鐘）。", note: "高架高速 SEP 涵蓋，免擔心過路費。", map: "https://maps.google.com",
+                  smokeLocation: "沿途經過的交流道或特定路段外圍方有吸菸定點。", smokeMap: "https://maps.google.com" },
+                { id: "5_3", time: "10:15", type: "scenic", spot: "【大和博物館（吳市海事歷史科學館）】", desc: "參觀大和博物館！館內最震撼的就是那座全長 26.3 公尺、依照 1:10 比例精準重現的「大和號戰艦」模型，還展示了零式水上偵察機等珍貴史料。", note: "地址：廣島県呉市宝町5-20。對面「海上自衛隊吳史料館」的巨大鐵鯨魚潛水艇外觀也是必拍打卡點！", map: "https://maps.google.com",
+                  smokeLocation: "博物館館內全面禁菸。戶外靠近港口公園側設有指定的集菸桶吸菸區。", smokeMap: "https://maps.google.com" },
+                { id: "5_4", time: "12:15", type: "food", spot: "吳市港口午餐 ➔ 前往宮島口", desc: "可在吳市港口附近享用著名的「吳海自咖哩（海自カレー）」或海鮮料理，隨後出發前往宮島口（車程約 50 分鐘）。", note: "海自咖哩是當地極具特色的傳統美味。", map: "https://maps.google.com",
+                  smokeLocation: "餐廳室內通常禁菸，需尋找店外或港口開闊處的指定煙灰缸。", smokeMap: "https://maps.google.com" },
+                { id: "5_5", time: "13:15", type: "transport", spot: "抵達宮島口 ➔ 搭乘渡輪", desc: "將 March 停在宮島口收費停車場。於 13:30 搭乘 JR 西日本宮島渡輪前往宮島。", note: "大和博物館門票雙人 1,000 日圓、宮島口停車費約 1,000 日圓、渡輪雙人來回與宮島訪問稅約 600 日圓（總計~台幣 510 元）。", map: "https://maps.google.com",
+                  smokeLocation: "宮島口渡輪新航廈一樓外側、靠近 JR 碼頭左側設有戶外定點圍欄吸菸區。", smokeMap: "https://maps.google.com" },
+                { id: "5_6", time: "13:45", type: "scenic", spot: "宮島大探險與【嚴島神社】滿潮絕景", desc: "抵達宮島後，先在錶參道商店街大啖現烤生牡蠣、紅葉饅頭。隨後散步前往【嚴島神社】，完美目睹朱紅色大鳥居與神社宛如漂浮在湛藍海上的神聖滿潮畫面！", note: "下午時間正好迎來滿潮段，時間卡得剛剛好！", map: "https://maps.google.com",
+                  smokeLocation: "全島世界遺產禁菸。唯一合法室外公眾吸菸室位於「宮島棧橋（渡輪站）」出站右側的密閉涼亭內，以及主要商店街後方巷弄指定室。", smokeMap: "https://maps.google.com" },
+                { id: "5_7", time: "17:40", type: "transport", spot: "搭船返程 ➔ 開車回廣島市區", desc: "搭船返回宮島口，取車開回廣島市區（車程約 40 分鐘）。", note: "傍晚回程車流可能稍多，注意駕駛安全。", map: "https://maps.google.com",
+                  smokeLocation: "返回宮島口碼頭後可於外側指定吸菸區補菸。", smokeMap: "https://maps.google.com" },
+                { id: "5_8", time: "19:00", type: "food", spot: "廣島燒名店晚餐【鐵太】或【電光石火】", desc: "晚餐安排去廣島燒名店，觀看師傅在鐵板上層層堆疊高麗菜、五花肉與炒麵的精湛手藝，大口滿足。", note: "每日預估花費（雙人）：門票/交通 + 豪華牡蠣大餐與廣島燒 14,000 日圓（~台幣 2,758 元）。", map: "https://maps.google.com",
+                  smokeLocation: "店內客席皆禁菸，但店門外或所在美食大樓同層通常備有公共吸菸室。", smokeMap: "https://maps.google.com" }
             ]},
             6: { date: "6/18 (四)", weather: "⛅ 多雲 23°C", title: "尾道山城 ➔ 宿：鞆之浦海景", focus: "依山傍海的文青小鎮、尋找貓咪蹤跡、入住崖上的波妞原型港町。", smoking: "尾道纜車站旁有吸菸區。鞆之浦為歷史木造建築保護區，戶外全面禁菸，但部分的開闊停車場設有集菸桶。", items: [
                 { id: "6_1", time: "10:00", type: "scenic", spot: "千光寺公園 & 貓之細道", desc: "搭纜車上山俯瞰尾道水道，隨後沿石階小路漫步下山尋找貓咪。", note: "山腳記得到一碗經典的背脂「尾道拉麵」當午餐。", map: "https://maps.google.com/?q=Senkoji+Park",
@@ -236,13 +241,13 @@
                 { id: "7_1", time: "09:00", type: "scenic", spot: "福禪寺 对潮樓", desc: "坐在榻榻米上欣賞被讚譽為「日東第一形勝」的窗框海景。", note: "雙人門票 400 日圓，窗框望出去就像一幅精緻的浮世繪山水畫。", map: "https://maps.google.com/?q=Fukuzenji+Taichorou",
                   smokeLocation: "寺廟與榻榻米大殿絕對禁菸。開車至此可於福禪寺山腳下的港口公共空地定點解決。", smokeMap: "https://maps.google.com/?q=Fukuzenji+Taichorou" },
                 { id: "7_2", time: "11:30", type: "scenic", spot: "倉敷美觀地區", desc: "漫遊水鄉。下午沿著倉敷川散步。", note: "有非常多充滿設計感的文具與紙膠帶小店，Charlotte 保證淪陷。", map: "https://maps.google.com/?q=Kurashiki+Bikan+Historical+Quarter",
-                  smokeLocation: "美觀白壁老街區禁菸。合法吸菸區位於「倉敷美觀地區中央公眾廁所」後方的專屬吸菸小木屋。", smokeMap: "https://maps.google.com/?q=Kurashiki+Bikan+Central+Restroom" },
+                  smokeLocation: "美觀白壁老街區禁菸. 合法吸菸區位於「倉敷美觀地區中央公眾廁所」後方的專屬吸菸小木屋。", smokeMap: "https://maps.google.com/?q=Kurashiki+Bikan+Central+Restroom" },
                 { id: "7_3", time: "16:30", type: "hotel", spot: "APA飯店 岡山站前店", desc: "地址：岡山県岡山市北区下石井1丁目3-12", note: "飯店停車費約 1,500 日圓。下車立刻連通地下街。", map: "https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae",
                   smokeLocation: "全客房禁菸。1 樓公用區域通道旁設有密閉電子鎖吸菸室（George 可刷房卡或自由進入）。", smokeMap: "https://maps.google.com/?q=APA+Hotel+Okayama+Ekimae" },
                 { id: "7_4", time: "17:00", type: "shopping", spot: "AEON MALL 岡山大採購", desc: "步行前往與車站相連的超級巨大 AEON，開啟瘋狂採購模式！", note: "晚餐在商場內安排享用高級岡山備前黑牛燒肉或千屋牛。", map: "https://maps.google.com/?q=AEON+MALL+Okayama",
                   smokeLocation: "AEON 商場 4 樓與 7 樓餐廳街的男女洗手間通道深處，皆設有極乾淨的負壓吸菸專用室。", smokeMap: "https://maps.google.com/?q=AEON+MALL+Okayama" }
             ]},
-            8: { date: "6/20 (六)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於汽車旅館型態，客房寬敞且皆提供非常友善的吸菸環境。", items: [
+            8: { date: "6/20 (開)", weather: "⛅ 多雲 25°C", title: "岡山名園 ➔ 跨越瀨戶大橋 ➔ 宿高松", focus: "黑色烏城、日本三大名園、駛回四國、高松最終採購、入住設計感精品飯店。", smoking: "與島 PA 服務區戶外吸菸區景觀極佳。高松織女星飯店屬於汽車旅館型態，客房寬敞且皆提供非常友善的吸菸環境。", items: [
                 { id: "8_1", time: "09:00", type: "scenic", spot: "岡山後樂園 & 岡山城", desc: "參觀黑色的「烏城」與完美比例的日本三大名園之一。", note: "共通券雙人 1,280 日圓。可以過橋一起悠閒散步。", map: "https://maps.google.com/?q=Okayama+Korakuen",
                   smokeLocation: "後樂園正門外售票廣場旁、以及岡山城天守閣入口外的休憩木椅區設有定點吸菸槽。", smokeMap: "https://maps.google.com/?q=Okayama+Korakuen+Main+Gate" },
                 { id: "8_2", time: "12:40", type: "transport", spot: "跨越瀨戶大橋自駕", desc: "開車南下，橫跨壯麗的瀨戶大橋海中公路返回四國。", note: "中途一定要停靠【與島 PA】服務區，在海中央下車拍大橋全景與吸菸。", map: "https://maps.google.com/?q=Yoshima+Parking+Area",
@@ -379,7 +384,6 @@
                 ? `<img src="${photoSrc}" class="w-full h-36 object-cover rounded-xl border-2 border-[#E6DFD1] mt-3 shadow-inner">` 
                 : `<div class="border-2 border-dashed border-gray-200 bg-gray-50 rounded-xl p-4 mt-3 text-center text-gray-400 text-xs">📸 本地手帳此景點尚無照片</div>`;
 
-            // 吸菸區優化區塊 HTML 邏輯
             let smokeSectionHtml = '';
             if (item.smokeLocation) {
                 smokeSectionHtml = `
@@ -409,7 +413,6 @@
                     <p class="text-[11px] text-[#8C6D4F] leading-relaxed"><span class="font-bold text-[#A67C52]"><i class="fa-solid fa-pencil mr-1"></i>備註小貼紙：</span>${item.note || '無詳細備註'}</p>
                 </div>
 
-                <!-- 點擊地標即刻顯示 Google 地圖吸菸區位置 -->
                 ${smokeSectionHtml}
 
                 ${photoHtml}
