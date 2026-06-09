@@ -99,6 +99,9 @@
     </nav>
 
     <script>
+// 記帳專用全域變數
+let expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [];
+let exchangeRate = 0.215; // 預設匯率
         // ==========================================
         // 1. FIREBASE CONFIGURATION & INITIALIZATION
         // ==========================================
@@ -110,7 +113,16 @@
             messagingSenderId: "YOUR_SENDER_ID",
             appId: "YOUR_APP_ID"
         };
-        
+
+        async function syncRate() {
+    try {
+        const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
+        const data = await res.json();
+        exchangeRate = data.rates.TWD;
+    } catch(e) { console.warn("匯率同步失敗"); }
+}
+syncRate();
+
         let db; let storage;
         try {
             if (firebaseConfig.apiKey !== "YOUR_FIREBASE_API_KEY") {
@@ -119,6 +131,39 @@
                 storage = firebase.storage();
             }
         } catch(e) { console.log("Firebase 尚未填寫，自動切換至 LocalStorage 離線運行"); }
+
+window.addExpense = function() {
+    const id = document.getElementById('expId').value;
+    const text = document.getElementById('expText').value;
+    const amountJpy = parseFloat(document.getElementById('expJpy').value);
+    if (!text || isNaN(amountJpy)) return alert("請填完整資料");
+    const entry = { id: id ? parseInt(id) : Date.now(), text, amountJpy, 
+                    category: document.getElementById('expCat').value, 
+                    payer: document.getElementById('expPayer').value, 
+                    split: document.getElementById('expSplit').value };
+    if(id) { expenseLedger[expenseLedger.findIndex(i => i.id == id)] = entry; }
+    else { expenseLedger.push(entry); }
+    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+    renderExpense();
+};
+
+window.deleteExpense = function(id) {
+    if(confirm("確定刪除？")) {
+        expenseLedger = expenseLedger.filter(i => i.id !== id);
+        localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+        renderExpense();
+    }
+};
+
+window.editExpense = function(id) {
+    const item = expenseLedger.find(i => i.id === id);
+    document.getElementById('expId').value = item.id;
+    document.getElementById('expText').value = item.text;
+    document.getElementById('expJpy').value = item.amountJpy;
+    document.getElementById('expCat').value = item.category;
+    document.getElementById('expPayer').value = item.payer;
+    document.getElementById('expSplit').value = item.split;
+};
 
         // ==========================================
         // 2. STATE MANAGEMENT & DATA
@@ -551,75 +596,39 @@
         }
 
         // --- MODULE 3: EXPENSE ---
-        function renderExpense() {
-            const container = document.getElementById('appBody');
-            if(!container) return;
-            let totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
-            let totalTwd = Math.round(totalJpy * 0.197);
+       function renderExpense() {
+    const totalJpy = expenseLedger.reduce((sum, i) => sum + i.amountJpy, 0);
+    let listHtml = expenseLedger.map(i => `
+        <div class="flex justify-between items-center bg-white p-3 rounded-xl border border-[#E6DFD1] shadow-sm mb-2">
+            <div><p class="text-xs font-bold">${i.text}</p><p class="text-[10px] text-[#4A7C59]">${i.category} • ${i.payer}</p></div>
+            <div class="text-right">
+                <p class="text-xs font-mono font-bold">¥${i.amountJpy.toLocaleString()}</p>
+                <p class="text-[10px] text-red-500 font-mono">≈ NT$ ${Math.round(i.amountJpy * exchangeRate).toLocaleString()}</p>
+            </div>
+            <div class="flex gap-2">
+                <button onclick="editExpense(${i.id})" class="text-blue-400"><i class="fa-solid fa-pen"></i></button>
+                <button onclick="deleteExpense(${i.id})" class="text-gray-300"><i class="fa-solid fa-trash"></i></button>
+            </div>
+        </div>
+    `).join('');
 
-            let listHtml = '';
-            expenseLedger.forEach((item, index) => {
-                listHtml += `
-                    <div class="flex justify-between items-center bg-[#FDFDFD] p-3 rounded-xl border border-[#E6DFD1]">
-                        <div>
-                            <p class="text-xs font-bold text-gray-800">${item.text}</p>
-                            <p class="text-[10px] text-gray-400">付款：${item.payer}</p>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="font-mono text-xs font-bold text-gray-900">¥${item.amountJpy.toLocaleString()}</span>
-                            <button onclick="deleteExpense(${index})" class="text-gray-300 hover:text-red-500 active:scale-90 transition-all"><i class="fa-solid fa-trash-can text-xs"></i></button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            container.innerHTML = `
-                <div class="diary-card p-4 bg-gradient-to-br from-[#4A7C59] to-[#2D5137] text-white mb-4">
-                    <p class="text-[10px] text-emerald-50 tracking-wider font-bold">📊 日誌累計總支出明細</p>
-                    <h2 class="text-2xl font-mono font-black text-amber-300 mt-1">¥ ${totalJpy.toLocaleString()} <span class="text-xs font-normal text-white">JPY</span></h2>
-                    <div class="border-t border-white/20 mt-2 pt-2 flex justify-between text-xs text-emerald-50">
-                        <span>預估換算台幣金額</span><span class="font-bold font-mono">~ NT$ ${totalTwd.toLocaleString()} 元</span>
-                    </div>
-                </div>
-
-                <div class="diary-card p-4 bg-white mb-4">
-                    <h3 class="text-xs font-bold text-gray-400 mb-3">🖊️ 紀錄一筆花費吧</h3>
-                    <div class="space-y-2 text-xs">
-                        <input type="text" id="expText" placeholder="支出項目" class="w-full border border-[#E6DFD1] rounded-xl px-3 py-2 focus:outline-none">
-                        <div class="flex gap-2">
-                            <input type="number" inputmode="numeric" id="expJpy" placeholder="日幣金額 (¥)" class="w-1/2 border border-[#E6DFD1] rounded-xl px-3 py-2 font-mono text-center focus:outline-none">
-                            <select id="expPayer" class="w-1/2 border border-[#E6DFD1] rounded-xl px-2 py-2 bg-white focus:outline-none">
-                                ${membersList.map(m => `<option>${m.name}</option>`).join('')}
-                            </select>
-                        </div>
-                        <button onclick="addExpense()" class="w-full diary-btn-blue py-2 text-xs font-bold shadow-sm active:scale-95 transition-all">手帳記帳確認</button>
-                    </div>
-                </div>
-
-                <div class="space-y-2">
-                    <h3 class="text-xs font-bold text-gray-400 px-1">📋 支出歷史明細紙條</h3>
-                    <div class="space-y-2 max-h-[25vh] overflow-y-auto hide-scrollbar">${listHtml || '<p class="text-center text-xs text-gray-400 py-4">目前尚無手帳記帳紀錄</p>'}</div>
-                </div>
-            `;
-        }
-
-        function addExpense() {
-            const text = document.getElementById('expText').value.trim();
-            const amountJpy = parseInt(document.getElementById('expJpy').value);
-            const payer = document.getElementById('expPayer').value;
-            if (!text || isNaN(amountJpy)) return;
-
-            const newExp = { id: 'ex_' + Date.now(), text, amountJpy, payer, split: '雙人均分' };
-            expenseLedger.push(newExp);
-            localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-            renderExpense();
-        }
-
-        function deleteExpense(index) {
-            expenseLedger.splice(index, 1);
-            localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-            renderExpense();
-        }
+    document.getElementById('appBody').innerHTML = `
+        <div class="diary-card p-5 bg-[#688B9A] text-white mb-6">
+            <p class="text-[10px] opacity-80">總支出儀表板 (匯率 ${exchangeRate.toFixed(3)})</p>
+            <p class="text-xl font-bold font-mono">¥${totalJpy.toLocaleString()} / <span class="text-amber-300">NT$ ${Math.round(totalJpy * exchangeRate).toLocaleString()}</span></p>
+        </div>
+        <input type="hidden" id="expId">
+        <div class="grid grid-cols-2 gap-2 mb-6">
+            <input type="text" id="expText" placeholder="項目名稱" class="col-span-2 border p-3 rounded-lg text-xs">
+            <input type="number" inputmode="numeric" id="expJpy" placeholder="金額 (日幣 ¥)" class="border p-3 rounded-lg text-xs font-mono">
+            <select id="expCat" class="border p-3 rounded-lg text-xs"><option>美食</option><option>交通</option><option>購物</option><option>住宿</option></select>
+            <select id="expPayer" class="border p-3 rounded-lg text-xs">${membersList.map(m=>`<option>${m.name}</option>`).join('')}</select>
+            <select id="expSplit" class="col-span-2 border p-3 rounded-lg text-xs"><option>雙人均分</option><option>Charlotte 付</option><option>George 付</option></select>
+            <button onclick="addExpense()" class="col-span-2 bg-[#4A7C59] text-white p-3 rounded-lg text-xs font-bold">確認紀錄</button>
+        </div>
+        ${listHtml}
+    `;
+}
 
         // --- MODULE 4: PLANNING ---
         function renderPlanning() {
