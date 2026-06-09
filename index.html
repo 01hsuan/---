@@ -550,84 +550,86 @@
             `;
         }
 
-       // --- 記帳功能模組 (整合版：匯率同步 + CRUD 操作) ---
+       // --- 整合版：記帳功能模組 ---
 
-// 1. 初始化資料與匯率
-let exchangeRate = 0.215; 
-
-async function syncExchangeRate() {
-    try {
-        const res = await fetch('https://api.exchangerate-api.com/v4/latest/JPY');
-        const data = await res.json();
-        exchangeRate = data.rates.TWD;
-    } catch (e) { console.warn("匯率同步失敗，使用預設值"); }
-    renderExpense();
+// 確保 expenseLedger 為全域變數且已定義
+if (typeof expenseLedger === 'undefined') {
+    var expenseLedger = JSON.parse(localStorage.getItem('e_ledger')) || [];
 }
 
-// 2. 核心操作 (增/刪/改)
-function addExpense() {
-    const id = document.getElementById('expId').value; // 隱藏欄位判斷是否為編輯
-    const text = document.getElementById('expText').value;
-    const amountJpy = parseFloat(document.getElementById('expJpy').value);
-    const category = document.getElementById('expCat').value;
-    const payer = document.getElementById('expPayer').value;
-    const split = document.getElementById('expSplit').value;
-
-    if (!text || isNaN(amountJpy)) return alert("請輸入完整資訊");
-
-    if (id) {
-        // 更新模式
-        const index = expenseLedger.findIndex(i => i.id == id);
-        expenseLedger[index] = { id: parseInt(id), text, amountJpy, category, payer, split };
-    } else {
-        // 新增模式
-        expenseLedger.push({ id: Date.now(), text, amountJpy, category, payer, split });
-    }
-    
-    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
-    renderExpense();
-}
-
-function deleteExpense(id) {
+// 刪除功能
+window.deleteExpense = function(id) {
     if(confirm("確定要刪除這筆支出嗎？")) {
         expenseLedger = expenseLedger.filter(item => item.id !== id);
         localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
         renderExpense();
     }
-}
+};
 
-function editExpense(id) {
+// 編輯功能 (反填入輸入框)
+window.editExpense = function(id) {
     const item = expenseLedger.find(i => i.id === id);
     if (!item) return;
     
+    // 確保輸入框已生成再填入
     document.getElementById('expId').value = item.id;
     document.getElementById('expText').value = item.text;
     document.getElementById('expJpy').value = item.amountJpy;
     document.getElementById('expCat').value = item.category;
     document.getElementById('expPayer').value = item.payer;
     document.getElementById('expSplit').value = item.split;
+    
     window.scrollTo({ top: 150, behavior: 'smooth' });
-}
+};
 
-// 3. 渲染介面
+// 新增/更新功能
+window.addExpense = function() {
+    const id = document.getElementById('expId').value;
+    const text = document.getElementById('expText').value;
+    const amountJpy = parseFloat(document.getElementById('expJpy').value);
+    const category = document.getElementById('expCat').value;
+    const payer = document.getElementById('expPayer').value;
+    const split = document.getElementById('expSplit').value;
+
+    if (!text || isNaN(amountJpy)) return alert("請確認欄位是否填寫完整");
+
+    if (id) {
+        // 更新原有項目
+        const index = expenseLedger.findIndex(i => i.id == id);
+        expenseLedger[index] = { id: parseInt(id), text, amountJpy, category, payer, split };
+    } else {
+        // 新增項目
+        expenseLedger.push({ id: Date.now(), text, amountJpy, category, payer, split });
+    }
+    
+    // 清空輸入框
+    document.getElementById('expId').value = '';
+    document.getElementById('expText').value = '';
+    document.getElementById('expJpy').value = '';
+    
+    localStorage.setItem('e_ledger', JSON.stringify(expenseLedger));
+    renderExpense();
+};
+
+// 重新渲染介面
 function renderExpense() {
     const container = document.getElementById('appBody');
     const totalJpy = expenseLedger.reduce((sum, item) => sum + item.amountJpy, 0);
-    const totalTwd = (totalJpy * exchangeRate).toFixed(0);
+    const totalTwd = Math.round(totalJpy * exchangeRate);
 
     let listHtml = expenseLedger.map(item => `
         <div class="flex items-center justify-between bg-white p-3 rounded-xl border border-[#E6DFD1] shadow-sm">
             <div>
-                <p class="text-xs font-bold">${item.text}</p>
+                <p class="text-xs font-bold text-gray-800">${item.text}</p>
                 <p class="text-[10px] text-[#4A7C59]">${item.category} • ${item.payer}</p>
             </div>
-            <div class="flex items-center gap-3">
+            <div class="flex items-center gap-2">
                 <div class="text-right">
                     <p class="text-xs font-mono font-bold">¥${item.amountJpy.toLocaleString()}</p>
-                    <p class="text-[10px] text-red-400 font-mono">≈ NT$ ${(item.amountJpy * exchangeRate).toFixed(0)}</p>
+                    <p class="text-[10px] text-red-400 font-mono">≈ NT$ ${Math.round(item.amountJpy * exchangeRate).toLocaleString()}</p>
                 </div>
-                <button onclick="editExpense(${item.id})" class="text-blue-400"><i class="fa-solid fa-pen-to-square"></i></button>
-                <button onclick="deleteExpense(${item.id})" class="text-gray-300 hover:text-red-500"><i class="fa-solid fa-trash-can"></i></button>
+                <button onclick="editExpense(${item.id})" class="text-blue-400 p-1"><i class="fa-solid fa-pen-to-square"></i></button>
+                <button onclick="deleteExpense(${item.id})" class="text-gray-300 hover:text-red-500 p-1"><i class="fa-solid fa-trash-can"></i></button>
             </div>
         </div>
     `).join('');
@@ -646,9 +648,9 @@ function renderExpense() {
             <h3 class="text-xs font-bold text-gray-500 mb-4">＋ 記帳 / 編輯</h3>
             <div class="grid grid-cols-2 gap-3">
                 <input type="text" id="expText" placeholder="項目名稱" class="col-span-2 border rounded-lg p-2 text-xs">
-                <input type="number" id="expJpy" placeholder="金額 (¥)" class="border rounded-lg p-2 text-xs">
+                <input type="number" id="expJpy" placeholder="金額 (日幣 ¥)" class="border rounded-lg p-2 text-xs font-mono">
                 <select id="expCat" class="border rounded-lg p-2 text-xs">
-                    <option>交通</option><option>美食</option><option>住宿</option><option>購物</option>
+                    <option>交通</option><option>美食</option><option>住宿</option><option>購物</option><option>其他</option>
                 </select>
                 <select id="expPayer" class="border rounded-lg p-2 text-xs">
                     ${membersList.map(m => `<option>${m.name}</option>`).join('')}
@@ -666,9 +668,6 @@ function renderExpense() {
         </div>
     `;
 }
-
-// 啟動
-syncExchangeRate();
 
         // --- MODULE 4: PLANNING ---
         function renderPlanning() {
